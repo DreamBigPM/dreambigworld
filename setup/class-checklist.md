@@ -162,7 +162,7 @@ type 50 commands by hand. This one installs everything your server needs.
 Copy and paste this entire line into your terminal, then press Enter:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/wolf-pack/main/setup/vps-setup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/wocros/wolf-pack/main/setup/vps-setup.sh | bash
 ```
 
 Watch the progress. When it asks for your **Anthropic API key**, paste in the key
@@ -185,7 +185,7 @@ source ~/.bashrc
 ### Step 5.1 — Fork the template
 
 1. Log into github.com
-2. Go to: **github.com/YOUR_INSTRUCTOR_GITHUB/wolf-pack**
+2. Go to: **github.com/wocros/wolf-pack**
 3. Click the **Fork** button (top right of the page)
 4. Click **Create Fork** — leave all settings as-is
 5. You now have your own copy at `github.com/YOUR_GITHUB_USERNAME/daedalus-starter`
