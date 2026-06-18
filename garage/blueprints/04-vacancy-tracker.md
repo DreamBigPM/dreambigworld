@@ -1,52 +1,62 @@
 # Blueprint 04 — Vacancy Tracker
 
-**What it does:** Tracks your vacant units, how long they've been empty,
-showings you've done, and applicants in your pipeline.
+**The problem:** Every day a unit sits empty, you lose money. But more than that —
+you lose track. How long has it been vacant? How many people have you shown it to?
+Where did that one interested applicant go? You're managing the pipeline in your head
+and it's leaking.
 
-**Problem it solves:** Every day a unit sits vacant is money you're not making.
-You need to know exactly how long each unit has been empty, who you've shown it to,
-and where each applicant is in the process — without digging through texts and emails.
+**What this builds:** A vacancy dashboard showing every empty unit, how many days
+it's been on the market, every showing you've done, and where each applicant stands
+in your pipeline — from first contact to move-in.
 
-**What you'll need before starting:**
-- Your current vacant units (address, unit number, bed/bath, asking rent)
-- Any showings you've already done (rough dates and notes are fine)
-- How you currently handle applications (portal? paper? email?)
+**Time to build:** 1–2 hours
+
+**What to have ready:** Your current vacant units (address, bed/bath, asking rent)
+and any showings or applicants you already have in the pipeline — even rough notes.
 
 ---
 
 ## Hand This to Jarvis
 
-Copy and paste everything below into Claude Code:
+*Open Claude Code. Copy everything below the line. Paste it. Hit enter.*
 
 ---
 
-> I want to build a vacancy tracker.
->
-> Every vacant unit is costing me money every day. Right now I track showings
-> and applicants in my head and in scattered texts. I want one place to see:
->
-> 1. All my currently vacant units — address, unit, bed/bath, asking rent,
->    and how many days it's been vacant
-> 2. Every showing I've done for each unit — date, prospect name, and a note
->    about how it went
-> 3. Applicant status for each unit — something like:
->    Shown / Applied / Under Review / Approved / Denied / Moved In
->
-> I want to be able to see at a glance which units have been vacant the longest
-> and which have the most active applicant pipeline.
->
-> Keep it simple for now — I don't need it to connect to my PM software.
-> I just need a clear picture in one place.
->
-> Please follow the normal plan → approve → build process. Tell me what
-> you're going to build before you write any code.
+I want to build a vacancy tracker for my property management business.
+
+Here's the problem: vacant units cost me money every single day. I need to
+know exactly which units are empty, how long they've been sitting, who I've
+shown them to, and where each prospect is in the process. Right now that
+information lives in my head and in scattered texts.
+
+Here's exactly what I want it to do:
+
+1. Show me all my currently vacant units, sorted by how long they've been empty —
+   longest first. I want to feel the urgency of every empty day.
+   Each unit should show: address, unit number, bed/bath, asking rent, days vacant
+
+2. For each unit, let me log showings: who came, when, and a quick note on how it went
+
+3. Track each applicant through a simple pipeline:
+   Shown → Applied → Under Review → Approved → Denied → Moved In
+
+4. Let me mark a unit as filled — which should log the move-in date and
+   calculate how many days it was vacant total
+
+I don't need this connected to my PM software right now. I just need one clear
+place to see what's happening with my pipeline.
+
+Please follow the normal build process: tell me what you're going to build
+before you write anything. I want to approve the plan first.
 
 ---
 
-## What You'll Get
+## After the Build
 
-By the end of this build:
-- A live list of vacant units sorted by days on market (oldest first)
-- A showing log for each unit — who came, when, and what happened
-- Applicant pipeline tracking per unit
-- A quick way to see which units are close to being filled and which are stuck
+Check this every morning:
+- Which unit has been vacant the longest? Make one call about it today.
+- Any applicants you haven't followed up with in 48 hours?
+- Any showings scheduled this week?
+
+**Result:** You will always know exactly where every vacancy stands.
+No more pipeline disappearing into your inbox.

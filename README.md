@@ -1,94 +1,106 @@
-# Wolf's Garage — Property Manager AI Dev Kit
+# Wolf's Garage
 
-You're not getting a finished car. You're getting a fully equipped garage,
-a professional workbench, and a shelf of blueprints.
-
-What you build is yours.
+### A fully equipped AI development environment for property managers.
+### No coding required.
 
 ---
 
-## What's in the Garage
+Every great mechanic has a garage. Tools on the wall. A workbench that knows
+your workflow. A shelf of blueprints for every job you do regularly.
 
-**The Garage** — Your own private server (VPS) running in the cloud.
-Claude Code lives here. Your tools run here. Nobody else has access.
+This is yours.
 
-**The Workbench** — A complete AI harness: Jarvis (your orchestrator) plus
-14 specialist agents who handle research, building, testing, security, legal,
-and more. You don't write code. You describe what you want. They build it.
-
-**The Blueprint Shelf** — 5 ready-to-build PM projects. Each one is a prompt
-you hand to Jarvis. It walks you through the build step by step.
+You're not getting someone else's finished car. You're getting everything you
+need to build your own — exactly the way your business works.
 
 ---
 
-## The 3 Steps
+## What You Got
 
-### Step 1 — Set Up Your Garage
-Follow the class setup guide: [`setup/class-checklist.md`](setup/class-checklist.md)
+**The Garage** is your private server — a cloud computer that runs 24/7,
+costs less than $10 a month, and belongs entirely to you. Claude Code lives
+here. Your tools run here. It connects to the software you already use.
 
-This installs your server, connects Claude Code, and clones this repo.
-Takes about 45 minutes. You only do this once.
+**The Workbench** is your AI harness — a system called Jarvis that runs your
+entire dev team. You describe what you want to build. Jarvis routes the work
+to the right specialist. You approve the plan before anything gets built.
+You never write a line of code.
 
-### Step 2 — Personalize Your Workbench
-Run the personalization prompt: [`setup/personalize.md`](setup/personalize.md)
+**The Dev Team** is 14 AI specialists built specifically for property management:
+a researcher, a builder, a tester, a security reviewer, a legal reviewer, and
+more. They work together in sequence. Nothing ships until it's been tested and
+reviewed.
 
-This tells Claude your name, your company, your properties, and all the
-tools you use. Claude reads this file at the start of every session.
-The more it knows, the better it works. Takes about 10 minutes.
+**The Blueprint Shelf** is 5 ready-to-build projects. Each one is a prompt
+you hand to Jarvis. You'll have your first real tool running by end of day.
 
-### Step 3 — Pick a Blueprint and Start Building
-Browse the blueprint shelf: [`garage/blueprints/`](garage/)
+---
 
+## Three Steps. That's It.
+
+**Step 1 — Build Your Garage**
+Get your server running and Claude Code connected.
+→ [`setup/class-checklist.md`](setup/class-checklist.md)
+*Takes about 45 minutes. You only do this once.*
+
+**Step 2 — Set Up Your Workbench**
+Tell Claude who you are — your name, company, properties, and every tool
+you use. It reads this file at the start of every session. The more it knows,
+the sharper it gets.
+→ [`setup/personalize.md`](setup/personalize.md)
+*Takes about 10 minutes. Paste one prompt. Jarvis does the rest.*
+
+**Step 3 — Grab a Blueprint and Build**
 Pick the problem that's costing you the most time or money. Hand the
-blueprint to Jarvis. Your first real tool will be running by end of day.
+blueprint to Jarvis. Approve the plan. Watch it get built.
+→ [`garage/blueprints/`](garage/)
+*Your first build: 1–2 hours.*
 
 ---
 
-## What You'll Need
+## What This Costs
 
-| Requirement | Cost | Where to Get It |
-|-------------|------|-----------------|
-| Hostinger VPS | ~$5/month | hostinger.com |
-| Anthropic API key | ~$5–15/month | console.anthropic.com |
+| What | Cost | Where |
+|------|------|-------|
+| Hostinger VPS (your server) | ~$5–7/month | hostinger.com |
+| Anthropic API key (Claude's brain) | ~$5–15/month | console.anthropic.com |
 | GitHub account | Free | github.com |
-| Claude Code Desktop | Free | claude.ai/download |
+| Claude Code (the interface) | Free | claude.ai/download |
 
-**Total: roughly $10–20/month.** Less than a tank of gas.
-
----
-
-## What's Inside
-
-```
-wolf-pack/
-├── CLAUDE.md                    ← Claude's instruction manual — personalized for you
-├── garage/
-│   ├── blueprints/              ← 5 ready-to-build PM projects
-│   │   ├── 01-lease-renewal-reminder.md
-│   │   ├── 02-late-rent-tracker.md
-│   │   ├── 03-maintenance-request-log.md
-│   │   ├── 04-vacancy-tracker.md
-│   │   └── 05-monthly-owner-report.md
-├── projects/                    ← Your built tools go here
-├── .claude/agents/              ← Your 14-agent dev team
-│   ├── oracle.md  neo.md  q.md  tars.md  judge.md
-│   ├── sentinel.md  scotty.md  tron.md  asimov.md
-│   ├── hermes.md  ralph.md  viper.md  atlas.md  mason.md
-└── setup/
-    ├── class-checklist.md       ← Full setup walkthrough (start here)
-    ├── personalize.md           ← Fill in your info (do this second)
-    ├── first-session.md         ← Starter prompts once you're running
-    └── vps-setup.sh             ← Automated server installer (runs once)
-```
+**About $10–20/month total.** Less than a tank of gas. More leverage than
+any hire you've made.
 
 ---
 
-## The Mindset
+## What's on the Blueprint Shelf
 
-You are not learning to code. You are learning to direct an AI that can code.
+| # | Blueprint | The Problem It Solves |
+|---|-----------|----------------------|
+| 01 | [Lease Renewal Reminder](garage/blueprints/01-lease-renewal-reminder.md) | Stop finding out a lease expired two weeks ago |
+| 02 | [Late Rent Tracker](garage/blueprints/02-late-rent-tracker.md) | Know exactly who owes what — and have the notice ready |
+| 03 | [Maintenance Request Log](garage/blueprints/03-maintenance-request-log.md) | One place for every request, from intake to resolved |
+| 04 | [Vacancy Tracker](garage/blueprints/04-vacancy-tracker.md) | Every vacant day is a dollar lost — track them all |
+| 05 | [Monthly Owner Report](garage/blueprints/05-monthly-owner-report.md) | Professional reports in minutes, not an hour |
 
-The skill is knowing what you want, describing it clearly, and recognizing a
-good result when you see one. You've been doing that your whole career.
-You just had different tools.
+---
+
+## Who This Is For
+
+You manage properties. You know your business cold. You're not a developer
+and you don't want to become one.
+
+What you want is a system that does the repetitive work — tracking, drafting,
+logging, reporting — so you can focus on the work that actually requires you.
+
+That's what this is.
+
+---
+
+## One Thing to Know
+
+Jarvis always tells you what it's going to build before it builds anything.
+You approve the plan. You can redirect it. Nothing runs without your okay.
+
+You are the architect. Jarvis is the crew.
 
 Welcome to the garage.

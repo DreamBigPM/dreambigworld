@@ -1,58 +1,65 @@
 # Blueprint 05 — Monthly Owner Report Generator
 
-**What it does:** Takes the numbers you already have and formats them into a
-clean, professional monthly report you can email to your property owners.
+**The problem:** You spend an hour every month turning raw numbers into a
+report that looks like you know what you're doing. The report matters — it's
+how owners judge your competence — but creating it is busywork. You're a
+property manager, not a desktop publisher.
 
-**Problem it solves:** You spend an hour every month copy-pasting numbers into
-a Word doc and making it look professional. The report is important — it builds
-trust with your owners — but creating it is tedious busywork.
+**What this builds:** A simple form where you enter the numbers for the month.
+Hit generate. Get a clean, professional report ready to copy into an email
+or export as a PDF. The whole thing takes under 10 minutes.
 
-**What you'll need before starting:**
-- A sample of your current owner report (even a rough one) so Claude can match your format
-- The data you normally include: rent collected, expenses, maintenance costs, vacancy
-- Your preferred tone — formal? conversational? somewhere in between?
+**Time to build:** 1–2 hours
+
+**What to have ready:** One of your existing owner reports — even a rough one —
+so Jarvis can match your format. Plus the numbers you normally include each month.
 
 ---
 
 ## Hand This to Jarvis
 
-Copy and paste everything below into Claude Code:
+*Open Claude Code. Copy everything below the line. Paste it. Hit enter.*
 
 ---
 
-> I want to build a monthly owner report generator.
->
-> Every month I need to send each property owner a report on their property.
-> Right now it takes me way too long — I'm copying numbers into a template
-> manually and formatting it to look professional.
->
-> I want a tool where I can:
->
-> 1. Enter the key numbers for the month:
->    - Rent collected (and from which tenants)
->    - Expenses paid (maintenance, repairs, fees)
->    - Current vacancy status
->    - Any issues or notes the owner needs to know about
->    - Anything that needs owner approval
->
-> 2. Hit a button (or run a command) and get a formatted, professional report
->    I can copy into an email or PDF and send directly to the owner
->
-> The report should look like it came from a real property management company —
-> clean, professional, and easy for a non-technical owner to read.
->
-> Start with a template I can fill in manually. Later I might want it to pull
-> data automatically, but don't build that yet.
->
-> Please follow the normal plan → approve → build process. Tell me what
-> you're going to build before you write any code.
+I want to build a monthly owner report generator for my property management business.
+
+Here's the problem: every month I have to send each property owner a professional
+summary of what happened with their property. Right now I'm manually copying
+numbers into a Word doc and formatting it to look professional. It takes too long
+and I dread doing it.
+
+Here's exactly what I want it to do:
+
+1. Give me a simple form where I enter the month's data for one property:
+   - Rent collected (and from which tenants)
+   - Expenses paid (maintenance, repairs, management fees, other)
+   - Net income for the month
+   - Maintenance summary — what happened and its status
+   - Current vacancy status
+   - Notes for the owner — anything they need to know or approve
+
+2. Once I fill that in, generate a formatted, professional report that I can
+   copy directly into an email or export as a PDF
+
+The report should look like it came from a real property management company.
+Clean layout. Professional tone. Easy for a non-technical owner to read at a glance.
+It should feel like something you'd pay a firm $200/hour to produce.
+
+Start with a manual entry form — I'll type the numbers in each month.
+Don't worry about connecting to my accounting software yet. One problem at a time.
+
+Please follow the normal build process: tell me what you're going to build
+before you write anything. I want to approve the plan first.
 
 ---
 
-## What You'll Get
+## After the Build
 
-By the end of this build:
-- A simple form to enter monthly numbers for each property
-- A professional-looking report generated automatically from those numbers
-- Something you can send in under 10 minutes instead of an hour
-- A consistent format owners will come to recognize and trust
+On the last day of each month:
+- Open the form, enter the numbers for each property (takes about 2 minutes each)
+- Generate the report
+- Copy it into an email and send
+
+**Result:** Owner reports go from a dreaded hour of busywork to a 10-minute
+routine that consistently looks more professional than before.
