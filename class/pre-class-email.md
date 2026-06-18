@@ -62,9 +62,10 @@ Write it down. Bring it.
 
 **What to expect**
 
-Day 1 is setup + your first real agent (you'll see something that makes your jaw drop — I promise).
-Day 2 is building something specific to your business.
-Day 3 (half day) is polishing, next steps, and community.
+Day 1 opens with a live demo of Sophia — my AI executive assistant. I'll text her
+in front of the room with a real problem. Then we build the foundation she runs on.
+Day 2 you build your first real agent, specific to your business.
+Day 3 (half day) is the roadmap from what you built to your own Sophia.
 
 You'll leave with a working tool. Not a demo. Not a tutorial. Something that runs.
 

@@ -103,23 +103,29 @@ A chatbot answers questions. An agent **takes actions**.
 | Answers one thing per message | Chains multiple steps without being asked |
 | You do the work | It does the work |
 
-## The Maintenance Request Agent (Live Demo)
+## The Sophia Demo
 
-*Watch what happens when we give Claude a real tenant text.*
+*Wolf texts his AI executive assistant live, with a real problem from the room.*
 
-**Input:** One tenant message
-**Output:** 5 things — triage decision, tenant reply, work order, vendor dispatch, next step
+Sophia is a runtime agent — she runs 24/7 and Wolf reaches her by text or Slack,
+the same way you'd text a real assistant.
 
-**Time manually:** 15–20 minutes
-**Time with the agent:** 45 seconds
+**What she just did:**
+- Took a real input (your problem)
+- Made decisions without being asked
+- Responded like a person, not a search engine
+- Already knew Wolf's calendar, preferences, and business context
+
+**That's an agent.** Not a chatbot that answers questions —
+something that knows your business, remembers everything, and acts.
 
 ---
 
-## My Reaction to the Demo
+## My Reaction
 
-*What surprised me:*
+*What surprised me most:*
 
-*What I immediately thought of using this for:*
+*The first thing I want to build for my own business:*
 
 *Questions I have:*
 
