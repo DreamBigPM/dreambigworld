@@ -1,0 +1,69 @@
+name: Wolf Pack PR Check
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  check:
+    name: Review Your Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check Python syntax
+        run: |
+          echo "Checking Python files..."
+          ERRORS=0
+          FILES=$(find projects/ -name "*.py" 2>/dev/null || true)
+          if [ -z "$FILES" ]; then
+            echo "No Python files found yet — nothing to check."
+          else
+            for f in $FILES; do
+              if python -m py_compile "$f"; then
+                echo "  ✓ $f"
+              else
+                echo "  ✗ $f has a syntax error"
+                ERRORS=$((ERRORS + 1))
+              fi
+            done
+          fi
+          if [ $ERRORS -gt 0 ]; then
+            echo ""
+            echo "Fix the errors above, push again, and this check will re-run."
+            exit 1
+          fi
+
+      - name: Check for secrets accidentally committed
+        run: |
+          echo "Scanning for accidentally committed secrets..."
+          FOUND=0
+          # Check for API key patterns
+          if grep -r "sk-ant-" projects/ 2>/dev/null; then
+            echo "⚠️  Possible Anthropic API key found in projects/ — remove it before merging."
+            FOUND=1
+          fi
+          if grep -r "ANTHROPIC_API_KEY\s*=\s*['\"]sk" projects/ 2>/dev/null; then
+            echo "⚠️  Hardcoded API key found — use environment variables instead."
+            FOUND=1
+          fi
+          if [ $FOUND -gt 0 ]; then
+            exit 1
+          fi
+          echo "  ✓ No secrets found."
+
+      - name: All checks passed
+        run: |
+          echo ""
+          echo "✅ Your PR looks clean."
+          echo "   Python syntax: OK"
+          echo "   No secrets: OK"
+          echo ""
+          echo "Ask Wolf to review and merge."
