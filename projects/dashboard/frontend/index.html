@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Big PM — KPI Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0f1923;
+    --card:      #1a2332;
+    --card-2:    #1f2d40;
+    --border:    #263447;
+    --text:      #e8edf2;
+    --muted:     #7a8fa6;
+    --blue:      #3b82f6;
+    --blue-dim:  #1e3a5f;
+    --green:     #22c55e;
+    --yellow:    #f59e0b;
+    --red:       #ef4444;
+    --green-bg:  rgba(34,197,94,.12);
+    --yellow-bg: rgba(245,158,11,.12);
+    --red-bg:    rgba(239,68,68,.12);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  html { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; scroll-behavior: smooth; }
+  body { min-height: 100vh; padding-bottom: 48px; }
+
+  /* ── HEADER ─────────────────────────────────────────── */
+  #header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  #header h1 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
+  #header h1 span { color: var(--blue); }
+  .header-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  #sync-ts { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  #btn-refresh {
+    background: var(--blue-dim);
+    color: var(--blue);
+    border: 1px solid var(--blue);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  #btn-refresh:hover { background: var(--blue); color: #fff; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin-icon { display: inline-block; }
+  #btn-refresh.loading .spin-icon { animation: spin .7s linear infinite; }
+
+  .main { max-width: 1440px; margin: 0 auto; padding: 20px 20px 0; }
+
+  /* ── OFFLINE BANNER ─────────────────────────────────── */
+  #offline-banner {
+    display: none;
+    background: var(--red-bg);
+    border: 1px solid var(--red);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    color: var(--red);
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  /* ── SECTION LABEL ─────────────────────────────────── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 24px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* ── CARD ───────────────────────────────────────────── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  /* ── BRIEFING ───────────────────────────────────────── */
+  .briefing-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .briefing-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--blue);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chevron {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform .2s;
+    display: inline-block;
+  }
+  .chevron.open { transform: rotate(180deg); }
+  #briefing-body {
+    display: none;
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+  #briefing-body.open { display: block; }
+
+  /* ── KPI SCORECARD GRID ─────────────────────────────── */
+  #kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    gap: 12px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .kpi-card.green::before  { background: var(--green); }
+  .kpi-card.yellow::before { background: var(--yellow); }
+  .kpi-card.red::before    { background: var(--red); }
+  .kpi-card.gray::before   { background: var(--border); }
+
+  .kpi-name { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .kpi-value { font-size: 26px; font-weight: 700; line-height: 1.1; }
+  .kpi-card.green  .kpi-value { color: var(--green); }
+  .kpi-card.yellow .kpi-value { color: var(--yellow); }
+  .kpi-card.red    .kpi-value { color: var(--red); }
+  .kpi-card.gray   .kpi-value { color: var(--muted); }
+  .kpi-target { font-size: 11px; color: var(--muted); }
+  .kpi-sub { font-size: 11px; color: var(--muted); }
+  .kpi-status { font-size: 11px; font-weight: 600; margin-top: 2px; }
+  .kpi-card.green  .kpi-status { color: var(--green); }
+  .kpi-card.yellow .kpi-status { color: var(--yellow); }
+  .kpi-card.red    .kpi-status { color: var(--red); }
+  .kpi-card.gray   .kpi-status { color: var(--muted); }
+
+  /* ── ZERO GOALS ─────────────────────────────────────── */
+  #zero-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .zero-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    transition: border-color .15s;
+    position: relative;
+  }
+  .zero-card:hover { border-color: var(--blue); }
+  .zero-card.danger { border-color: rgba(239,68,68,.5); background: rgba(239,68,68,.05); }
+  .zero-card.clear  { border-color: rgba(34,197,94,.4); background: rgba(34,197,94,.05); }
+  .zero-name { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .zero-count { font-size: 48px; font-weight: 800; line-height: 1; }
+  .zero-card.danger .zero-count { color: var(--red); }
+  .zero-card.clear  .zero-count { color: var(--green); }
+  .zero-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+    width: fit-content;
+  }
+  .zero-card.danger .zero-badge { background: var(--red-bg); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+  .zero-card.clear  .zero-badge { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+  .zero-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .zero-sub.loss { color: var(--red); font-weight: 600; }
+  .zero-chevron { position: absolute; top: 16px; right: 14px; color: var(--muted); font-size: 16px; }
+
+  /* ── TABLES ─────────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+  th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+  .tr-overdue td  { background: rgba(245,158,11,.05); }
+  .tr-critical td { background: rgba(239,68,68,.06); }
+
+  /* ── BADGES ─────────────────────────────────────────── */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .badge-red    { background: var(--red-bg);    color: var(--red);    border: 1px solid rgba(239,68,68,.3); }
+  .badge-yellow { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(245,158,11,.3); }
+  .badge-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid rgba(34,197,94,.3); }
+  .badge-blue   { background: var(--blue-dim);  color: var(--blue);   border: 1px solid rgba(59,130,246,.3); }
+  .badge-gray   { background: rgba(122,143,166,.1); color: var(--muted); border: 1px solid rgba(122,143,166,.2); }
+
+  /* ── RENEWAL DROPDOWN ───────────────────────────────── */
+  .renewal-select {
+    background: var(--card-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color .15s;
+    width: 100%;
+    max-width: 160px;
+  }
+  .renewal-select:focus { border-color: var(--blue); }
+  .renewal-select option { background: #1a2332; }
+
+  /* ── ALERTS ─────────────────────────────────────────── */
+  .alerts-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .alerts-title { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .alert-count-badge {
+    background: var(--red-bg);
+    color: var(--red);
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 8px;
+  }
+  #alerts-list { display: none; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 4px; }
+  #alerts-list.open { display: block; }
+  .alert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .alert-item:last-child { border-bottom: none; }
+  .alert-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+  .alert-dot.CRITICAL { background: var(--red); box-shadow: 0 0 5px rgba(239,68,68,.5); }
+  .alert-dot.WARN     { background: var(--yellow); }
+  .alert-msg { flex: 1; font-size: 12px; line-height: 1.5; }
+  .alert-sev { font-size: 10px; font-weight: 800; margin-bottom: 2px; }
+  .alert-sev.CRITICAL { color: var(--red); }
+  .alert-sev.WARN     { color: var(--yellow); }
+  .alert-time { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .alert-clear {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all .15s;
+  }
+  .alert-clear:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── VACANCY COST CLOCK CARDS ────────────────────────── */
+  #vacancy-clock-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+  }
+  .vac-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .vac-address { font-size: 13px; font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
+  .vac-property { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+  .vac-row { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; }
+  .vac-row .lbl { color: var(--muted); }
+  .vac-loss { font-size: 20px; font-weight: 800; color: var(--red); margin-top: 8px; }
+
+  /* ── TOGGLE BUTTON ───────────────────────────────────── */
+  .toggle-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .toggle-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── EMPTY / LOADING ─────────────────────────────────── */
+  .empty-state {
+    text-align: center;
+    padding: 28px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  /* ── RESPONSIVE ─────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .main { padding: 12px 12px 0; }
+    #kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    #zero-grid { grid-template-columns: repeat(2, 1fr); }
+    .kpi-value { font-size: 20px; }
+    .zero-count { font-size: 36px; }
+    #header h1 { font-size: 15px; }
+    #sync-ts { display: none; }
+  }
+
+  /* ── UTIL ────────────────────────────────────────────── */
+  .text-red    { color: var(--red) !important; }
+  .text-yellow { color: var(--yellow) !important; }
+  .text-green  { color: var(--green) !important; }
+  .text-muted  { color: var(--muted); }
+  .font-mono   { font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 12px; }
+  .truncate    { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── AT-RISK TABLE ───────────────────────────────────── */
+  .risk-factors { font-size: 11px; color: var(--yellow); margin-top: 2px; }
+
+  /* ── DRILL-DOWN DRAWER ───────────────────────────────── */
+  .kpi-card { cursor: pointer; transition: border-color .15s; }
+  .kpi-card:hover { border-color: var(--blue); }
+
+  #drawer-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 200;
+  }
+  #drawer-overlay.open { display: block; }
+
+  #drill-drawer {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 520px;
+    max-width: 100vw;
+    background: var(--card);
+    border-left: 1px solid var(--border);
+    z-index: 201;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .25s cubic-bezier(.4,0,.2,1);
+    overflow: hidden;
+  }
+  #drill-drawer.open { transform: translateX(0); }
+
+  #drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #drawer-title { font-size: 15px; font-weight: 700; }
+  #drawer-close {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  #drawer-close:hover { border-color: var(--red); color: var(--red); }
+  #drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+  }
+  #drawer-body table { min-width: 0; }
+  #drawer-body th, #drawer-body td { padding: 8px 8px; }
+  .drawer-loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+  .drawer-empty   { text-align: center; padding: 40px; color: var(--green);  font-size: 13px; }
+
+  @media (max-width: 560px) {
+    #drill-drawer { width: 100vw; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <h1>Dream <span>Big</span> PM</h1>
+  <div class="header-right">
+    <div id="sync-ts">Loading&hellip;</div>
+    <button id="btn-refresh" onclick="loadAll(true)">
+      <span class="spin-icon">&#8635;</span>
+      Refresh
+    </button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- OFFLINE BANNER -->
+  <div id="offline-banner">
+    Dashboard offline &mdash; last data from <span id="offline-ts">unknown</span>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       AI MORNING BRIEFING
+  ═════════════════════════════════════════════════════ -->
+  <div class="section-label">AI Morning Briefing</div>
+  <div class="card">
+    <div class="briefing-header" onclick="toggleBriefing()">
+      <div class="briefing-title">&#9733; Daily Briefing</div>
+      <span class="chevron" id="briefing-chevron">&#9660;</span>
+    </div>
+    <div id="briefing-body">
+      <div id="briefing-text" class="text-muted">Loading&hellip;</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       COMPANY KPI SCORECARD
+  ═════════════════════════════════════════════════════ -->
+  <div class="section-label">Company KPI Scorecard</div>
+  <div id="kpi-grid">
+    <!-- populated by JS -->
+    <div class="kpi-card gray"><div class="kpi-name">Rent Collected</div><div class="kpi-value">&#8212;</div></div>
+    <div class="kpi-card gray"><div class="kpi-name">Occupancy</div><div class="kpi-value">&#8212;</div></div>
+    <div class="kpi-card gray"><div class="kpi-name">Days on Market</div><div class="kpi-value">&#8212;</div></div>
+    <div class="kpi-card gray"><div class="kpi-name">Renewal Rate</div><div class="kpi-value">&#8212;</div></div>
+    <div class="kpi-card gray"><div class="kpi-name">Speed of Repair</div><div class="kpi-value">&#8212;</div></div>
+    <div class="kpi-card gray"><div class="kpi-name">Maint. Satisfaction</div><div class="kpi-value">&#8212;</div></div>
+    <div class="kpi-card gray"><div class="kpi-name">Google Rating</div><div class="kpi-value">&#8212;</div></div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       DAILY ZERO GOALS
+  ═════════════════════════════════════════════════════ -->
+  <div class="section-label">Daily Zero Goals</div>
+  <div id="zero-grid">
+    <div class="zero-card danger" onclick="openDrillDown('delinquency','Past Due Leases')">
+      <div class="zero-chevron">&#8250;</div>
+      <div class="zero-name">Past Due Leases</div>
+      <div class="zero-count" id="z-delinquent">&#8212;</div>
+      <div class="zero-badge" id="z-del-badge">&#8212;</div>
+    </div>
+    <div class="zero-card danger" onclick="openDrillDown('work_orders','Open Work Orders')">
+      <div class="zero-chevron">&#8250;</div>
+      <div class="zero-name">Open Work Orders</div>
+      <div class="zero-count" id="z-open-wo">&#8212;</div>
+      <div class="zero-badge" id="z-open-badge">&#8212;</div>
+    </div>
+    <div class="zero-card danger" onclick="openDrillDown('overdue_work_orders','Overdue Work Orders')">
+      <div class="zero-chevron">&#8250;</div>
+      <div class="zero-name">Overdue Work Orders</div>
+      <div class="zero-count" id="z-overdue-wo">&#8212;</div>
+      <div class="zero-badge" id="z-overdue-badge">&#8212;</div>
+    </div>
+    <div class="zero-card danger" onclick="openDrillDown('vacant_units','Vacant Units')">
+      <div class="zero-chevron">&#8250;</div>
+      <div class="zero-name">Vacant Units</div>
+      <div class="zero-count" id="z-vacant">&#8212;</div>
+      <div class="zero-badge" id="z-vacant-badge">&#8212;</div>
+      <div class="zero-sub loss" id="z-vacancy-loss"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       DELINQUENCY & COLLECTIONS
+  ═════════════════════════════════════════════════════ -->
+  <div class="section-label" id="section-delinquency">Delinquency &amp; Collections</div>
+  <div class="card">
+    <div class="table-wrap">
+      <table id="table-delinquency">
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th>Unit / Property</th>
+            <th>Days Late</th>
+            <th>Balance</th>
+            <th>Last Payment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5" class="empty-state">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       AT-RISK TENANTS
+  ═════════════════════════════════════════════════════ -->
+  <div class="section-label">At-Risk Tenants</div>
+  <div class="card">
+    <div class="table-wrap">
+      <table id="table-at-risk">
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th>Unit</th>
+            <th>Risk Score</th>
+            <th>Risk Factors</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="4" class="empty-state">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       MAINTENANCE — OPEN WORK ORDERS
+  ═════════════════════════════════════════════════════ -->
+  <div class="section-label" id="section-maintenance">
+    Open Work Orders
+    <button class="toggle-btn" id="wo-toggle-btn" onclick="toggleWOTable()">Show all</button>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table id="table-wo">
+        <thead>
+          <tr>
+            <th>WO #</th>
+            <th>Description</th>
+            <th>Property</th>
+            <th>Days Open</th>
+            <th>Vendor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5" class="empty-state">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       LEASE RENEWAL PIPELINE
+  ═════════════════════════════════════════════════════ -->
+  <div class="section-label">
+    Lease Renewal Pipeline
+    <span class="text-muted" style="font-size:11px;text-transform:none;letter-spacing:0;font-weight:400;">Est. turnover cost: $4,800/unit</span>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table id="table-renewals">
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th>Unit</th>
+            <th>Lease Ends</th>
+            <th>Days Left</th>
+            <th>Risk</th>
+            <th>Monthly Rent</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="7" class="empty-state">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       ACTIVE ALERTS
+  ═════════════════════════════════════════════════════ -->
+  <div class="section-label">Active Alerts</div>
+  <div class="card">
+    <div class="alerts-header" onclick="toggleAlerts()">
+      <div class="alerts-title">
+        Alerts
+        <span class="alert-count-badge" id="alert-count-badge">&#8212;</span>
+      </div>
+      <span class="chevron" id="alerts-chevron">&#9660;</span>
+    </div>
+    <div id="alerts-list">
+      <div class="empty-state">Loading&hellip;</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       VACANCY COST CLOCK
+  ═════════════════════════════════════════════════════ -->
+  <div class="section-label" id="section-vacancy">Vacancy Cost Clock</div>
+  <div id="vacancy-clock-grid">
+    <div class="vac-card"><div style="height:80px;background:var(--card-2);border-radius:4px;"></div></div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- DRILL-DOWN DRAWER -->
+<div id="drawer-overlay" onclick="closeDrillDown()"></div>
+<div id="drill-drawer">
+  <div id="drawer-header">
+    <div id="drawer-title">Details</div>
+    <button id="drawer-close" onclick="closeDrillDown()">&#x2715;</button>
+  </div>
+  <div id="drawer-body">
+    <div class="drawer-loading">Loading&hellip;</div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────
+let lastKpis = null;
+let woShowAll = false;
+let briefingOpen = false;
+let alertsOpen = true;
+let allWOs = [];
+
+// ─────────────────────────────────────────────────────────
+// FORMAT HELPERS
+// ─────────────────────────────────────────────────────────
+function fmt$(n) {
+  if (n == null) return '—';
+  return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
+}
+function fmtPct(n, decimals) {
+  if (n == null) return '—';
+  return Number(n).toFixed(decimals == null ? 1 : decimals) + '%';
+}
+function fmtDate(s) {
+  if (!s) return '—';
+  const d = new Date(s.includes('T') ? s : s + 'T00:00:00');
+  return d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+}
+function daysFromNow(s) {
+  if (!s) return null;
+  const d = new Date(s + 'T00:00:00');
+  return Math.round((d - Date.now()) / 86400000);
+}
+function fmtTs(s) {
+  if (!s) return '—';
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  return d.toLocaleDateString('en-US', {month:'short', day:'numeric'}) + ' at ' +
+         d.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+}
+function trunc(s, n) {
+  if (!s) return '—';
+  return s.length > n ? s.slice(0, n) + '…' : s;
+}
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─────────────────────────────────────────────────────────
+// KPI COLOR RULES
+// ─────────────────────────────────────────────────────────
+function kpiColor(key, val) {
+  if (val == null) return 'gray';
+  const v = Number(val);
+  const map = {
+    rent_collected:     v => v >= 98 ? 'green' : v >= 93 ? 'yellow' : 'red',
+    occupancy:          v => v >= 96 ? 'green' : v >= 91 ? 'yellow' : 'red',
+    days_on_market:     v => v <= 21 ? 'green' : v <= 30 ? 'yellow' : 'red',
+    renewal_rate:       v => v >= 90 ? 'green' : v >= 80 ? 'yellow' : 'red',
+    speed_of_repair:    v => v <= 3  ? 'green' : v <= 7  ? 'yellow' : 'red',
+    maint_satisfaction: v => v >= 70 ? 'green' : v >= 60 ? 'yellow' : 'red',
+    google_rating:      v => v >= 4.8 ? 'green' : v >= 4.5 ? 'yellow' : 'red',
+  };
+  return map[key] ? map[key](v) : 'gray';
+}
+const statusLabel = { green:'● On Target', yellow:'● Needs Attention', red:'● Below Target', gray:'— No Data' };
+
+// ─────────────────────────────────────────────────────────
+// RENDER: KPI SCORECARD
+// ─────────────────────────────────────────────────────────
+function renderKPIs(d) {
+  const rentPct    = d.rent_collected?.pct;
+  const occPct     = d.occupancy?.pct;
+  const domDays    = d.days_on_market?.avg_days;
+  const renPct     = d.renewal_rate?.pct || null;
+  const sorDays    = d.speed_of_repair?.avg_days_to_close;
+  const maintSat   = d.maintenance_satisfaction || null;
+  const googleRat  = d.google_rating;
+
+  const kpis = [
+    { key:'rent_collected',     name:'Rent Collected',       val:rentPct,
+      drill:'rent_collected',
+      display: rentPct != null ? fmtPct(rentPct) : '—',
+      target:'Target ≥98%',
+      sub: rentPct != null ? fmt$(d.rent_collected.collected_usd) + ' / ' + fmt$(d.rent_collected.expected_usd) : '' },
+    { key:'occupancy',          name:'Occupancy',             val:occPct,
+      drill:'occupancy',
+      display: occPct != null ? fmtPct(occPct) : '—',
+      target:'Target ≥96%',
+      sub: occPct != null ? (d.occupancy.occupied + ' / ' + d.occupancy.total + ' units') : '' },
+    { key:'days_on_market',     name:'Days on Market',        val:domDays,
+      drill:'vacant_units',
+      display: domDays != null ? Math.round(domDays) + ' days' : '—',
+      target:'Target ≤21 days',
+      sub: '' },
+    { key:'renewal_rate',       name:'Lease Renewal Rate',    val:renPct,
+      drill:'renewals',
+      display: renPct ? fmtPct(renPct) : '—',
+      target:'Target ≥90%',
+      sub: renPct ? '' : ((d.renewal_rate?.pipeline?.length || 0) + ' in pipeline') },
+    { key:'speed_of_repair',    name:'Speed of Repair',       val:sorDays,
+      drill:'overdue_work_orders',
+      display: sorDays != null ? sorDays + ' days' : '—',
+      target:'Target ≤3 days',
+      sub: (d.speed_of_repair?.open_count || 0) + ' open, ' + (d.speed_of_repair?.overdue_count || 0) + ' overdue' },
+    { key:'maint_satisfaction', name:'Maint. Satisfaction',   val:maintSat,
+      drill:null,
+      display: maintSat ? fmtPct(maintSat, 0) : '—',
+      target:'Target ≥70%',
+      sub: maintSat ? '' : 'No survey data' },
+    { key:'google_rating',      name:'Google Rating',         val:googleRat,
+      drill:null,
+      display: googleRat ? googleRat.toFixed(1) + ' ★' : '—',
+      target:'Target ≥4.8★',
+      sub: '' },
+  ];
+
+  const grid = document.getElementById('kpi-grid');
+  grid.innerHTML = kpis.map(k => {
+    const color = k.val != null ? kpiColor(k.key, k.val) : 'gray';
+    const clickAttr = k.drill
+      ? `onclick="openDrillDown('${k.drill}','${k.name}')"`
+      : '';
+    const cursorStyle = k.drill ? '' : 'style="cursor:default"';
+    return `<div class="kpi-card ${color}" ${clickAttr} ${cursorStyle}>
+      <div class="kpi-name">${esc(k.name)}</div>
+      <div class="kpi-value">${esc(k.display)}</div>
+      <div class="kpi-target">${k.target}</div>
+      ${k.sub ? `<div class="kpi-sub">${esc(k.sub)}</div>` : ''}
+      <div class="kpi-status">${statusLabel[color]}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDER: ZERO GOALS
+// ─────────────────────────────────────────────────────────
+function renderZeroGoals(d) {
+  function setZero(countId, badgeId, count) {
+    const isZero = count === 0;
+    const el = document.getElementById(countId);
+    el.textContent = count;
+    const card = el.closest('.zero-card');
+    card.className = 'zero-card ' + (isZero ? 'clear' : 'danger');
+    const badge = document.getElementById(badgeId);
+    badge.textContent = isZero ? 'CLEAR' : 'CRITICAL';
+  }
+  setZero('z-delinquent',  'z-del-badge',    d.delinquent_count || 0);
+  setZero('z-open-wo',     'z-open-badge',   d.open_work_orders_count || 0);
+  setZero('z-overdue-wo',  'z-overdue-badge', d.overdue_work_orders_count || 0);
+
+  const vacCount = d.vacant_units_count || 0;
+  document.getElementById('z-vacant').textContent = vacCount;
+  const vacCard = document.getElementById('z-vacant').closest('.zero-card');
+  vacCard.className = 'zero-card ' + (vacCount === 0 ? 'clear' : 'danger');
+  document.getElementById('z-vacant-badge').textContent = vacCount === 0 ? 'CLEAR' : 'CRITICAL';
+
+  const totalLoss = (d.vacancy_cost_clock || []).reduce((s, v) => s + (v.total_loss || 0), 0);
+  const lossSub = document.getElementById('z-vacancy-loss');
+  lossSub.textContent = totalLoss > 0 ? fmt$(totalLoss) + ' total lost' : '';
+  lossSub.className = 'zero-sub' + (totalLoss > 0 ? ' loss' : '');
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDER: DELINQUENCY TABLE
+// ─────────────────────────────────────────────────────────
+function renderDelinquency(d) {
+  const rows  = d.rent_collected?.delinquent_leases || [];
+  const tbody = document.querySelector('#table-delinquency tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state text-green">No delinquent leases — all clear</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const rowCls = r.days_late > 20 ? 'tr-critical' : r.days_late > 7 ? 'tr-overdue' : '';
+    const daysCls = r.days_late > 14 ? 'text-red' : r.days_late > 7 ? 'text-yellow' : '';
+    return `<tr class="${rowCls}">
+      <td>${esc(r.tenant_name)}</td>
+      <td class="text-muted font-mono" style="max-width:220px">${esc(trunc(r.unit, 45))}</td>
+      <td class="${daysCls} font-mono">${r.days_late > 0 ? r.days_late + ' days' : '—'}</td>
+      <td class="font-mono ${r.balance > 0 ? 'text-red' : 'text-muted'}">${r.balance ? fmt$(r.balance) : '—'}</td>
+      <td class="text-muted">${r.last_payment_date ? fmtDate(r.last_payment_date) : '<span class="badge badge-red">No payment on file</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDER: AT-RISK TENANTS
+// ─────────────────────────────────────────────────────────
+function renderAtRisk(d) {
+  const rows  = d.at_risk_tenants || [];
+  const tbody = document.querySelector('#table-at-risk tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-state text-green">No at-risk tenants flagged</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const scoreColor = r.score >= 4 ? 'text-red' : r.score >= 3 ? 'text-yellow' : 'text-green';
+    const factors = (r.risk_factors || []).join(' · ');
+    return `<tr>
+      <td>${esc(r.tenant_name)}</td>
+      <td class="text-muted font-mono">${esc(r.unit || '')}${r.property ? ' &mdash; ' + esc(r.property) : ''}</td>
+      <td class="${scoreColor} font-mono" style="font-size:18px;font-weight:700">${r.score}/5</td>
+      <td class="risk-factors">${esc(factors)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDER: WORK ORDERS TABLE
+// ─────────────────────────────────────────────────────────
+function renderWOTable(showAll) {
+  const rows  = showAll ? allWOs : allWOs.slice(0, 15);
+  const tbody = document.querySelector('#table-wo tbody');
+  const btn   = document.getElementById('wo-toggle-btn');
+  btn.textContent = showAll ? 'Show less' : 'Show all ' + allWOs.length;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state text-green">No open work orders</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const overdue  = r.days_open > 3;
+    const critical = r.days_open > 14;
+    const rowCls   = critical ? 'tr-critical' : overdue ? 'tr-overdue' : '';
+    const daysCls  = critical ? 'badge-red' : overdue ? 'badge-yellow' : 'badge-gray';
+    return `<tr class="${rowCls}">
+      <td class="font-mono text-muted">#${esc(r.wo_id)}</td>
+      <td style="max-width:260px" class="truncate" title="${esc(r.description)}">${esc(trunc(r.description, 60))}</td>
+      <td class="text-muted" style="max-width:180px">${esc(trunc(r.property_name, 35))}</td>
+      <td><span class="badge ${daysCls}">${r.days_open}d</span></td>
+      <td>${r.vendor ? `<span class="badge badge-blue">${esc(trunc(r.vendor, 22))}</span>` : '<span class="badge badge-gray">Unassigned</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleWOTable() {
+  woShowAll = !woShowAll;
+  renderWOTable(woShowAll);
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDER: RENEWAL PIPELINE
+// ─────────────────────────────────────────────────────────
+function renderRenewals(d) {
+  const rows  = (d.renewal_rate?.pipeline || []).slice()
+    .sort((a, b) => new Date(a.lease_end_date) - new Date(b.lease_end_date));
+  const tbody = document.querySelector('#table-renewals tbody');
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No renewals in pipeline</td></tr>';
+    return;
+  }
+
+  const statusOpts  = ['not_started','contacted','in_negotiation','signed','lost'];
+  const statusLabel = {
+    not_started:'Not Started', contacted:'Contacted',
+    in_negotiation:'In Negotiation', signed:'Signed', lost:'Lost'
+  };
+
+  tbody.innerHTML = rows.map(r => {
+    const days     = daysFromNow(r.lease_end_date);
+    const daysDisp = days == null ? '—' : days <= 0 ? '<span class="text-red">Expired</span>' : days + ' days';
+    const daysCls  = days != null && days < 30 ? 'text-red' : days < 60 ? 'text-yellow' : '';
+    const riskArr  = ['★','★★','★★★','★★★★','★★★★★'];
+    const riskDisp = riskArr[(r.risk_score || 1) - 1] || '★';
+    const riskCls  = r.risk_score >= 4 ? 'text-red' : r.risk_score >= 3 ? 'text-yellow' : 'text-green';
+    const selectHtml = `<select class="renewal-select" data-lease="${esc(r.lease_id)}" onchange="updateRenewalStatus(this)">
+      ${statusOpts.map(s => `<option value="${s}"${r.status === s ? ' selected' : ''}>${statusLabel[s]}</option>`).join('')}
+    </select>`;
+    return `<tr>
+      <td>${esc(r.tenant_name)}</td>
+      <td class="font-mono text-muted">${esc(r.unit_label)}</td>
+      <td class="text-muted">${fmtDate(r.lease_end_date)}</td>
+      <td class="${daysCls} font-mono">${daysDisp}</td>
+      <td class="${riskCls}" style="font-size:13px;letter-spacing:-1px">${riskDisp}</td>
+      <td class="font-mono">${fmt$(r.monthly_rent)}</td>
+      <td>${selectHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDER: ALERTS
+// ─────────────────────────────────────────────────────────
+function renderAlerts(data) {
+  const alerts = (data.alerts || []).slice().sort((a, b) => {
+    if (a.severity !== b.severity) return a.severity === 'CRITICAL' ? -1 : 1;
+    return new Date(b.fired_at) - new Date(a.fired_at);
+  });
+
+  const badge = document.getElementById('alert-count-badge');
+  badge.textContent = alerts.length;
+  const hasCritical = alerts.some(a => a.severity === 'CRITICAL');
+  badge.style.background   = hasCritical ? 'var(--red-bg)'    : 'var(--yellow-bg)';
+  badge.style.color        = hasCritical ? 'var(--red)'       : 'var(--yellow)';
+  badge.style.borderColor  = hasCritical ? 'rgba(239,68,68,.3)' : 'rgba(245,158,11,.3)';
+
+  const list = document.getElementById('alerts-list');
+  if (!alerts.length) {
+    list.innerHTML = '<div class="empty-state text-green" style="padding:20px">No active alerts — all clear</div>';
+    return;
+  }
+  list.innerHTML = alerts.map(a => `
+    <div class="alert-item" id="alert-${a.id}">
+      <div class="alert-dot ${esc(a.severity)}"></div>
+      <div class="alert-msg">
+        <div class="alert-sev ${esc(a.severity)}">${esc(a.severity)}</div>
+        <div>${esc(a.message)}</div>
+        <div class="alert-time">${fmtTs(a.fired_at)}</div>
+      </div>
+      <button class="alert-clear" onclick="clearAlert(${a.id})">&#x2715;</button>
+    </div>
+  `).join('');
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDER: VACANCY COST CLOCK
+// ─────────────────────────────────────────────────────────
+function renderVacancyClock(d) {
+  const units = d.vacancy_cost_clock || [];
+  const grid  = document.getElementById('vacancy-clock-grid');
+  if (!units.length) {
+    grid.innerHTML = '<div class="card empty-state text-green">No vacant units — full occupancy</div>';
+    return;
+  }
+  grid.innerHTML = units.map(u => `
+    <div class="vac-card">
+      <div class="vac-address">${esc(u.unit_label)}</div>
+      <div class="vac-property">${esc(u.property_name)}</div>
+      <div class="vac-row"><span class="lbl">Days Vacant</span><span>${u.days_vacant} days</span></div>
+      <div class="vac-row"><span class="lbl">Daily Cost</span><span>${fmt$(u.daily_cost)}/day</span></div>
+      <div class="vac-loss">${fmt$(u.total_loss)} lost</div>
+    </div>
+  `).join('');
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDER: BRIEFING
+// ─────────────────────────────────────────────────────────
+function renderBriefing(data) {
+  const el = document.getElementById('briefing-text');
+  if (data && data.text && data.text.trim()) {
+    el.textContent = data.text;
+    el.className = '';
+  } else {
+    el.textContent = 'Briefing will be ready at 6:05 am tomorrow.';
+    el.className = 'text-muted';
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// TOGGLES
+// ─────────────────────────────────────────────────────────
+function toggleBriefing() {
+  briefingOpen = !briefingOpen;
+  document.getElementById('briefing-body').classList.toggle('open', briefingOpen);
+  document.getElementById('briefing-chevron').classList.toggle('open', briefingOpen);
+}
+
+function toggleAlerts() {
+  alertsOpen = !alertsOpen;
+  document.getElementById('alerts-list').classList.toggle('open', alertsOpen);
+  document.getElementById('alerts-chevron').classList.toggle('open', alertsOpen);
+}
+
+// ─────────────────────────────────────────────────────────
+// API ACTIONS
+// ─────────────────────────────────────────────────────────
+async function updateRenewalStatus(sel) {
+  const leaseId = sel.dataset.lease;
+  const status  = sel.value;
+  try {
+    const r = await fetch('/api/renewals/' + leaseId + '/status', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({status}),
+    });
+    if (!r.ok) throw new Error('Server error');
+    sel.style.borderColor = 'var(--green)';
+    setTimeout(() => { sel.style.borderColor = ''; }, 2000);
+  } catch (e) {
+    sel.style.borderColor = 'var(--red)';
+    setTimeout(() => { sel.style.borderColor = ''; }, 2000);
+  }
+}
+
+async function clearAlert(id) {
+  try {
+    await fetch('/api/alerts/' + id + '/clear', { method: 'POST' });
+  } catch (_) {}
+  const el = document.getElementById('alert-' + id);
+  if (el) {
+    el.style.transition = 'opacity .3s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 350);
+  }
+  const badge = document.getElementById('alert-count-badge');
+  const n = parseInt(badge.textContent, 10);
+  if (!isNaN(n) && n > 0) badge.textContent = n - 1;
+}
+
+// ─────────────────────────────────────────────────────────
+// LOAD ALL DATA
+// ─────────────────────────────────────────────────────────
+async function loadAll(manual) {
+  const btn = document.getElementById('btn-refresh');
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    const bust = '?_=' + Date.now();
+    const [kpisRes, alertsRes, briefingRes] = await Promise.all([
+      fetch('/api/kpis' + bust),
+      fetch('/api/alerts'),
+      fetch('/api/briefing'),
+    ]);
+
+    if (!kpisRes.ok) throw new Error('KPI endpoint ' + kpisRes.status);
+
+    const [kpis, alertsData, briefingData] = await Promise.all([
+      kpisRes.json(),
+      alertsRes.ok  ? alertsRes.json()   : Promise.resolve({alerts:[], count:0}),
+      briefingRes.ok ? briefingRes.json() : Promise.resolve({text:''}),
+    ]);
+
+    lastKpis = kpis;
+    document.getElementById('offline-banner').style.display = 'none';
+
+    const ts = kpis._synced_at || kpis.refreshed_at;
+    document.getElementById('sync-ts').textContent = 'Synced: ' + fmtTs(ts);
+    document.getElementById('offline-ts').textContent = fmtTs(ts);
+
+    renderKPIs(kpis);
+    renderZeroGoals(kpis);
+    renderDelinquency(kpis);
+    renderAtRisk(kpis);
+
+    allWOs = (kpis.speed_of_repair?.open_work_orders || []).slice()
+      .sort((a, b) => b.days_open - a.days_open);
+    renderWOTable(woShowAll);
+
+    renderRenewals(kpis);
+    renderAlerts(alertsData);
+    renderVacancyClock(kpis);
+    renderBriefing(briefingData);
+
+    // auto-open alerts panel if CRITICALs are present
+    if (alertsData.alerts?.some(a => a.severity === 'CRITICAL')) {
+      alertsOpen = true;
+      document.getElementById('alerts-list').classList.add('open');
+      document.getElementById('alerts-chevron').classList.add('open');
+    }
+
+  } catch (err) {
+    console.error('Dashboard load error:', err);
+    document.getElementById('offline-banner').style.display = 'block';
+    if (lastKpis) {
+      document.getElementById('offline-ts').textContent = fmtTs(lastKpis._synced_at);
+    }
+    document.getElementById('sync-ts').textContent = 'Offline';
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// DRILL-DOWN DRAWER
+// ─────────────────────────────────────────────────────────
+function openDrillDown(section, title) {
+  document.getElementById('drawer-title').textContent = title;
+  document.getElementById('drawer-body').innerHTML = '<div class="drawer-loading">Loading&hellip;</div>';
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('drill-drawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  fetch('/api/drill/' + section)
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(data => renderDrawer(section, data))
+    .catch(err => {
+      document.getElementById('drawer-body').innerHTML =
+        '<div class="drawer-loading" style="color:var(--red)">Failed to load — ' + err + '</div>';
+    });
+}
+
+function closeDrillDown() {
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('drill-drawer').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrillDown(); });
+
+function renderDrawer(section, data) {
+  const body = document.getElementById('drawer-body');
+
+  if (section === 'delinquency' || section === 'rent_collected') {
+    const rows = data.records || data.delinquent_leases || [];
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No delinquent leases — all clear ✓</div>'; return; }
+    body.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>Tenant</th><th>Unit / Property</th><th>Days Late</th><th>Balance</th></tr></thead>
+      <tbody>${rows.map(r => {
+        const cls = r.days_late > 14 ? 'text-red' : r.days_late > 7 ? 'text-yellow' : '';
+        return `<tr>
+          <td>${esc(r.tenant_name)}</td>
+          <td class="text-muted font-mono" style="max-width:180px">${esc(trunc(r.unit||'',40))}</td>
+          <td class="${cls} font-mono">${r.days_late > 0 ? r.days_late + ' days' : '—'}</td>
+          <td class="font-mono ${r.balance > 0 ? 'text-red' : ''}">${r.balance ? fmt$(r.balance) : '—'}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+    return;
+  }
+
+  if (section === 'work_orders' || section === 'overdue_work_orders') {
+    const rows = data.records || [];
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No work orders — all clear ✓</div>'; return; }
+    body.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>WO #</th><th>Description</th><th>Property</th><th>Age</th><th>Vendor</th></tr></thead>
+      <tbody>${rows.map(r => {
+        const critical = r.days_open > 14;
+        const overdue  = r.days_open > 3;
+        const cls      = critical ? 'badge-red' : overdue ? 'badge-yellow' : 'badge-gray';
+        return `<tr class="${critical ? 'tr-critical' : overdue ? 'tr-overdue' : ''}">
+          <td class="font-mono text-muted">#${esc(r.wo_id)}</td>
+          <td style="max-width:200px" class="truncate" title="${esc(r.description)}">${esc(trunc(r.description,55))}</td>
+          <td class="text-muted" style="max-width:140px">${esc(trunc(r.property_name||'',30))}</td>
+          <td><span class="badge ${cls}">${r.days_open}d</span></td>
+          <td>${r.vendor ? `<span class="badge badge-blue">${esc(trunc(r.vendor,20))}</span>` : '<span class="badge badge-gray">Unassigned</span>'}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+    return;
+  }
+
+  if (section === 'vacant_units') {
+    const rows = data.records || [];
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No vacant units — full occupancy ✓</div>'; return; }
+    const totalLoss = rows.reduce((s, u) => s + (u.total_loss || 0), 0);
+    body.innerHTML = `
+      <div style="margin-bottom:14px;padding:12px;background:var(--red-bg);border:1px solid rgba(239,68,68,.3);border-radius:6px;font-size:13px">
+        <span style="color:var(--muted)">Total revenue lost:</span>
+        <span style="color:var(--red);font-weight:700;font-size:16px;margin-left:8px">${fmt$(totalLoss)}</span>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Unit</th><th>Property</th><th>Days Vacant</th><th>Daily Cost</th><th>Total Lost</th></tr></thead>
+        <tbody>${rows.map(u => `<tr>
+          <td class="font-mono">${esc(u.unit_label||u.unit_id||'')}</td>
+          <td class="text-muted" style="max-width:160px">${esc(trunc(u.property_name||'',35))}</td>
+          <td class="font-mono text-yellow">${u.days_vacant} days</td>
+          <td class="font-mono">${fmt$(u.daily_cost)}/day</td>
+          <td class="font-mono text-red font-weight-700">${fmt$(u.total_loss)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+    return;
+  }
+
+  if (section === 'occupancy') {
+    const vacant = data.vacant_units || [];
+    body.innerHTML = `
+      <div style="display:flex;gap:20px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px;padding:14px;background:var(--card-2);border-radius:6px;text-align:center">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Occupied</div>
+          <div style="font-size:28px;font-weight:700;color:var(--green)">${data.occupied || 0}</div>
+        </div>
+        <div style="flex:1;min-width:120px;padding:14px;background:var(--card-2);border-radius:6px;text-align:center">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Total Units</div>
+          <div style="font-size:28px;font-weight:700">${data.total || 0}</div>
+        </div>
+        <div style="flex:1;min-width:120px;padding:14px;background:var(--card-2);border-radius:6px;text-align:center">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Vacant</div>
+          <div style="font-size:28px;font-weight:700;color:var(--red)">${vacant.length}</div>
+        </div>
+      </div>
+      ${vacant.length ? `<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Vacant Units</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Unit</th><th>Property</th><th>Days Vacant</th></tr></thead>
+        <tbody>${vacant.map(u => `<tr>
+          <td class="font-mono">${esc(u.unit_label||u.unit_id||'')}</td>
+          <td class="text-muted">${esc(u.property_name||'')}</td>
+          <td class="font-mono text-yellow">${u.days_vacant||0} days</td>
+        </tr>`).join('')}</tbody>
+      </table></div>` : '<div class="drawer-empty">All units occupied ✓</div>'}`;
+    return;
+  }
+
+  if (section === 'renewals') {
+    const rows = data.records || [];
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No renewals in pipeline</div>'; return; }
+    body.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>Tenant</th><th>Unit</th><th>Lease Ends</th><th>Days Left</th><th>Status</th></tr></thead>
+      <tbody>${rows.map(r => {
+        const days = daysFromNow(r.lease_end_date);
+        const dCls = days != null && days < 30 ? 'text-red' : days < 60 ? 'text-yellow' : '';
+        const dDisp = days == null ? '—' : days <= 0 ? '<span class="text-red">Expired</span>' : days + ' days';
+        const statusMap = {not_started:'Not Started',contacted:'Contacted',in_negotiation:'In Negotiation',signed:'Signed',lost:'Lost'};
+        const sBadge = r.status === 'signed' ? 'badge-green' : r.status === 'lost' ? 'badge-red' : r.status === 'not_started' ? 'badge-gray' : 'badge-yellow';
+        return `<tr>
+          <td>${esc(r.tenant_name)}</td>
+          <td class="font-mono text-muted">${esc(r.unit_label||'')}</td>
+          <td class="text-muted">${fmtDate(r.lease_end_date)}</td>
+          <td class="${dCls} font-mono">${dDisp}</td>
+          <td><span class="badge ${sBadge}">${statusMap[r.status]||r.status}</span></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+    return;
+  }
+
+  // Fallback — show raw JSON summary
+  body.innerHTML = `<pre style="font-size:11px;color:var(--muted);overflow:auto">${JSON.stringify(data, null, 2)}</pre>`;
+}
+
+// ─────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────
+loadAll();
+setInterval(() => loadAll(false), 5 * 60 * 1000);
+</script>
+</body>
+</html>

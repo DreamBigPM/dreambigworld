@@ -3,3 +3,8 @@
 *.env
 .env*
 node_modules/
+.mcp.json
+projects/dashboard/db/*.db
+projects/dashboard/db/*.db-shm
+projects/dashboard/db/*.db-wal
+projects/dashboard/.env

@@ -17,9 +17,10 @@ the task genuinely doesn't match any specialist's domain.
 
 ## Who I Am
 
-My name is [YOUR NAME]. I am a property manager.
-My company is called [YOUR COMPANY NAME].
-I manage [NUMBER] units across [CITY/AREA].
+My name is Brian Bean. I am a property manager.
+My company is called Dream Big Property Management.
+I manage 120 units across the Inland Empire of Southern California —
+Riverside, Moreno Valley, Corona, and surrounding cities.
 
 I am NOT a software developer. I am a business operator using AI to automate
 repetitive tasks and run my business better. Keep everything as simple as possible.
@@ -151,8 +152,8 @@ Full specs for each specialist: `.claude/agents/`
 ## My Portfolio
 
 ```
-Portfolio size: [NUMBER] units
-Market(s): [CITY/AREA]
+Portfolio size: 120 units
+Market(s): Inland Empire, Southern California — Riverside, Moreno Valley, Corona, and surrounding cities
 ```
 
 **Do not list individual properties here.** Property data lives in my PM software
@@ -174,70 +175,69 @@ When building something for me, always check this list first.
 Prefer connecting to tools I already use over building something new.
 
 ### Property Management Software
-> Examples: AppFolio, Buildium, Yardi, Propertyware, Rent Manager, DoorLoop, TenantCloud
 ```
-I use: [YOUR PM SOFTWARE]
-I use it for: [leases, maintenance, payments, reporting]
-What I still do manually: [...]
+I use: Rentvine
+I use it for: leases, maintenance work orders, tenant payments, reporting, inspections
+Notes: Rent is collected via Rentvine's online portal using ACH (via Forte integration).
+       We do NOT have a direct login to Forte — Rentvine handles it.
+       Lease signing for renewals uses RentSign (built into Rentvine).
+       New leases currently use DocuSign, but we want to move to RentSign for new leases too.
+       Future: planning to onboard Second Nature's RXP system for new leases.
 ```
 
 ### Process & Workflow Software
-> Examples: LeadSimple, Aptly, Process Street, Monday.com, Notion
 ```
-I use: [YOUR PROCESS TOOL or "none"]
-I use it for: [lead follow-up, move-in checklists, SOPs]
+I use: Aptly
+I use it for: email client (Microsoft 365) and phone/texting (RingCentral) are both accessed via Aptly
 ```
 
 ### Email
-> Examples: Gmail (Google Workspace), Outlook (Microsoft 365)
 ```
-I use: [YOUR EMAIL SYSTEM]
-I send emails to: [tenants / owners / vendors / all three]
+I use: Microsoft 365, accessed via Aptly client
+I send emails to: tenants, owners, vendors
 ```
 
 ### Internal Communication
-> Examples: Slack, Microsoft Teams, Google Chat
 ```
-I use: [YOUR TEAM CHAT or "just email/text"]
-My team size: [number of people]
+I use: Slack
 ```
 
 ### Phone System
-> Examples: RingCentral, Zoom Phone, Google Voice, OpenPhone
 ```
-I use: [YOUR PHONE SYSTEM or "my personal cell"]
-Does it support texting? [Yes / No]
+I use: RingCentral, accessed via Aptly client
+Does it support texting? Yes
 ```
 
 ### Tenant Communication & Texting
-> Examples: OpenPhone, Twilio, built into PM software, manual texting
 ```
-I use: [YOUR TEXTING TOOL]
-I text tenants about: [rent reminders, maintenance updates, renewals]
+I use: RingCentral via Aptly
+I text tenants about: rent reminders, maintenance updates, renewals
 ```
 
 ### Lease & Document Signing
-> Examples: DocuSign, HelloSign, DotLoop, Adobe Sign
 ```
-I use: [YOUR SIGNING TOOL]
+I use: RentSign (in Rentvine) for renewals
+       DocuSign for new leases (transitioning to RentSign)
+       Future: Second Nature RXP for new leases
+Manual pain point: still signing some docs in the office — want to eliminate this
 ```
 
 ### Payments & Rent Collection
 ```
-I use: [YOUR PAYMENT SYSTEM]
-Tenants pay via: [online portal / check / Zelle / mix]
+I use: Rentvine online portal with Forte ACH integration
+Tenants pay via: online portal (ACH) mostly; some may pay by other means
+Note: No direct Forte login — all managed through Rentvine
 ```
 
 ### Accounting
-> Examples: QuickBooks, Wave, Xero
 ```
-I use: [YOUR ACCOUNTING TOOL]
+I use: QuickBooks Online Accountant (QBOA) — recently migrated to this
 ```
 
 ### Maintenance Coordination
 ```
-I use: [YOUR MAINTENANCE TOOL or "phone/email"]
-My vendor list lives in: [spreadsheet / contacts / PM software]
+I use: Rentvine (work orders, vendor assignment, cost tracking)
+My vendor list lives in: Rentvine
 ```
 
 ---

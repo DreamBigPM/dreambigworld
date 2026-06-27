@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+httpx
+python-dotenv
+anthropic
+msal
+python-jose[cryptography]
+itsdangerous
+apscheduler
