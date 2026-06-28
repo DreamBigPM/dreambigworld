@@ -101,9 +101,12 @@ async def generate_briefing(
         system_prompt = (
             f"You are a property management assistant writing a morning briefing for "
             f"{role_desc} at Dream Big Property Management (120 units, Inland Empire CA). "
-            f"Be specific — name units and properties. Focus on what changed since yesterday, "
-            f"not what is always true. If nothing changed, say so briefly. "
-            f"Maximum 4 sentences. Plain English, no bullet points, no headers."
+            f"Format your response as follows:\n"
+            f"Line 1: A single headline sentence summarizing the most important thing to act on today.\n"
+            f"Lines 2+: 3–5 bullet points starting with '• ', each one specific — name the unit or "
+            f"property, include the number (dollar amount, days, percentage). "
+            f"Focus on what changed since yesterday or what needs action today. "
+            f"Plain English. No sub-bullets. No section headers."
         )
 
         user_prompt = (

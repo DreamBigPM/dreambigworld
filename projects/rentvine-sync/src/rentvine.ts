@@ -1,7 +1,11 @@
 import 'dotenv/config'
 
-const API_KEY = process.env.RENTVINE_API_KEY!
-const BASE_URL = process.env.RENTVINE_BASE_URL || 'https://api.rentvine.com/v1'
+const API_KEY    = process.env.RENTVINE_API_KEY!
+const API_SECRET = process.env.RENTVINE_API_SECRET || ''
+const ACCOUNT    = process.env.RENTVINE_ACCOUNT || 'dreambig'
+const BASE_URL   = (process.env.RENTVINE_BASE_URL || 'https://api.rentvine.com/v1').replace(/\/$/, '')
+
+const BASIC_TOKEN = Buffer.from(`${API_KEY}:${API_SECRET}`).toString('base64')
 
 async function request(path: string, params: Record<string, string> = {}): Promise<any> {
   const url = new URL(`${BASE_URL}${path}`)
@@ -9,8 +13,8 @@ async function request(path: string, params: Record<string, string> = {}): Promi
 
   const res = await fetch(url.toString(), {
     headers: {
-      'Authorization': `Bearer ${API_KEY}`,
-      'X-API-Key': API_KEY,
+      'Authorization': `Basic ${BASIC_TOKEN}`,
+      'X-Rentvine-Account': ACCOUNT,
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     },
@@ -53,9 +57,10 @@ export async function fetchUnits(since?: string) {
   return fetchAllPages('/units', params)
 }
 
-export async function fetchLeases(since?: string) {
+export async function fetchLeases(since?: string, status?: string) {
   const params: Record<string, string> = {}
   if (since) params.updatedSince = since
+  if (status) params.status = status
   return fetchAllPages('/leases', params)
 }
 

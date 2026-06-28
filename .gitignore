@@ -7,4 +7,8 @@ node_modules/
 projects/dashboard/db/*.db
 projects/dashboard/db/*.db-shm
 projects/dashboard/db/*.db-wal
+projects/dashboard/backend/*.db
+projects/dashboard/backend/*.db-shm
+projects/dashboard/backend/*.db-wal
 projects/dashboard/.env
+.env

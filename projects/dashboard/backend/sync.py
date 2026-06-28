@@ -180,9 +180,13 @@ def _build_api_payload(snapshot: dict, refreshed_at: str) -> dict:
             "vacant_units": snapshot.get("vacant_unit_list", []),
         },
         "renewal_rate": {
-            "pct": snapshot.get("renewal_rate_pct") or 0.0,
-            "signed": 0,
-            "total_expired": 0,
+            "pct": snapshot.get("renewal_rate_monthly_pct") or snapshot.get("renewal_rate_pct"),
+            "monthly_pct": snapshot.get("renewal_rate_monthly_pct"),
+            "rolling12_pct": snapshot.get("renewal_rate_rolling12_pct"),
+            "monthly_signed": snapshot.get("renewal_rate_monthly_signed", 0),
+            "monthly_expired": snapshot.get("renewal_rate_monthly_expired", 0),
+            "rolling12_signed": snapshot.get("renewal_rate_rolling12_signed", 0),
+            "rolling12_expired": snapshot.get("renewal_rate_rolling12_expired", 0),
             "pipeline": snapshot.get("renewal_pipeline_list", []),
         },
         "speed_of_repair": {

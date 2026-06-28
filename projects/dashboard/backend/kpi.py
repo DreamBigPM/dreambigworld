@@ -7,6 +7,7 @@ Results are saved to SQLite for trend lines and caching.
 
 import asyncio
 import logging
+from collections import defaultdict
 from datetime import date, datetime, timedelta
 from typing import Optional
 
@@ -156,36 +157,95 @@ async def compute_days_on_market() -> dict:
 
 
 async def compute_renewal_rate() -> dict:
-    """Lease renewal rate for the trailing 12 months."""
+    """
+    Lease renewal rate using startDate vs moveInDate heuristic.
+
+    For each lease that expired in the evaluation window, find the next active
+    lease on the same unit. If that lease's startDate != moveInDate, the same
+    tenant renewed. If startDate == moveInDate, a new tenant moved in — that
+    expiration is excluded from the calc entirely (not a renewal opportunity).
+    Units with no subsequent lease count as failed renewals (in denominator only).
+
+    Returns monthly_pct (last completed calendar month) and rolling12_pct
+    (trailing 365 days). headline pct = monthly if available, else rolling12.
+    """
     try:
-        renewals, pipeline_rows = await asyncio.gather(
-            rentvine.fetch_renewals(),
-            asyncio.coroutine(lambda: database.get_renewal_pipeline())(),
+        leases = await rentvine.fetch_leases()
+        pipeline_rows = database.get_renewal_pipeline()
+
+        today = date.today()
+        first_of_this_month = today.replace(day=1)
+        last_of_prev_month = first_of_this_month - timedelta(days=1)
+        first_of_prev_month = last_of_prev_month.replace(day=1)
+        rolling_start = (today - timedelta(days=365)).isoformat()
+        yesterday = (today - timedelta(days=1)).isoformat()
+
+        # Group and sort leases by unit
+        by_unit: dict = defaultdict(list)
+        for lease in leases:
+            uid = str(lease.get("unitId") or lease.get("unit_id") or "")
+            if uid:
+                by_unit[uid].append(lease)
+        for uid in by_unit:
+            by_unit[uid].sort(key=lambda l: l.get("startDate") or "")
+
+        def _classify(window_start: str, window_end: str):
+            renewed = 0
+            total = 0
+            for uid, unit_leases in by_unit.items():
+                for i, lease in enumerate(unit_leases):
+                    end = lease.get("endDate") or ""
+                    if not (window_start <= end <= window_end):
+                        continue
+                    next_lease = unit_leases[i + 1] if i + 1 < len(unit_leases) else None
+                    if next_lease:
+                        start = next_lease.get("startDate") or ""
+                        move_in = next_lease.get("moveInDate") or ""
+                        if not start or not move_in:
+                            continue  # can't determine — skip
+                        if start == move_in:
+                            continue  # new tenant — exclude from calc
+                        # startDate != moveInDate → same tenant renewed
+                        renewed += 1
+                        total += 1
+                    else:
+                        # Unit vacant after expiration → failed renewal
+                        total += 1
+            return renewed, total
+
+        m_renewed, m_total = _classify(
+            first_of_prev_month.isoformat(),
+            last_of_prev_month.isoformat(),
         )
+        r_renewed, r_total = _classify(rolling_start, yesterday)
 
-        cutoff = (date.today() - timedelta(days=365)).isoformat()
-        recent_renewals = [
-            r for r in renewals
-            if (r.get("createdDate") or r.get("renewalDate") or "") >= cutoff
-        ]
-
-        signed = sum(
-            1 for r in recent_renewals
-            if (r.get("status") or "").lower() in ("signed", "executed", "complete", "completed")
-        )
-        total_expired = len(recent_renewals) if recent_renewals else 1
-
-        pct = (signed / total_expired * 100) if total_expired > 0 else 0.0
+        monthly_pct = round(m_renewed / m_total * 100, 1) if m_total > 0 else None
+        rolling12_pct = round(r_renewed / r_total * 100, 1) if r_total > 0 else None
+        headline_pct = monthly_pct if monthly_pct is not None else rolling12_pct
 
         return {
-            "pct": round(pct, 1),
-            "signed": signed,
-            "total_expired": total_expired,
+            "pct": headline_pct,
+            "monthly_pct": monthly_pct,
+            "rolling12_pct": rolling12_pct,
+            "monthly_signed": m_renewed,
+            "monthly_expired": m_total,
+            "rolling12_signed": r_renewed,
+            "rolling12_expired": r_total,
             "pipeline": pipeline_rows,
         }
     except Exception as e:
         logger.error(f"compute_renewal_rate failed: {e}")
-        return {"pct": 0, "signed": 0, "total_expired": 0, "pipeline": [], "error": str(e)}
+        return {
+            "pct": None,
+            "monthly_pct": None,
+            "rolling12_pct": None,
+            "monthly_signed": 0,
+            "monthly_expired": 0,
+            "rolling12_signed": 0,
+            "rolling12_expired": 0,
+            "pipeline": [],
+            "error": str(e),
+        }
 
 
 async def _get_renewal_pipeline():

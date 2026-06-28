@@ -5,6 +5,7 @@ All calls go through _fetch_all_pages() which handles pagination automatically.
 Errors are caught and logged — callers receive empty lists/dicts rather than crashes.
 """
 
+import base64
 import os
 import logging
 from datetime import date
@@ -14,21 +15,26 @@ import httpx
 logger = logging.getLogger(__name__)
 
 _API_KEY = None
+_API_SECRET = None
+_ACCOUNT = None
 _BASE_URL = None
 
 
 def _init():
-    global _API_KEY, _BASE_URL
+    global _API_KEY, _API_SECRET, _ACCOUNT, _BASE_URL
     _API_KEY = os.getenv("RENTVINE_API_KEY", "")
+    _API_SECRET = os.getenv("RENTVINE_API_SECRET", "")
+    _ACCOUNT = os.getenv("RENTVINE_ACCOUNT", "dreambig")
     _BASE_URL = os.getenv("RENTVINE_BASE_URL", "https://api.rentvine.com/v1").rstrip("/")
 
 
 def _headers() -> dict:
     if not _API_KEY:
         _init()
+    token = base64.b64encode(f"{_API_KEY}:{_API_SECRET}".encode()).decode()
     return {
-        "Authorization": f"Bearer {_API_KEY}",
-        "X-API-Key": _API_KEY,
+        "Authorization": f"Basic {token}",
+        "X-Rentvine-Account": _ACCOUNT,
         "Accept": "application/json",
         "Content-Type": "application/json",
     }
@@ -43,7 +49,7 @@ async def _get(path: str, params: dict = None) -> dict:
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(url, headers=_headers(), params=params or {})
             if resp.status_code == 401:
-                logger.error("Rentvine API: 401 Unauthorized — check RENTVINE_API_KEY")
+                logger.error("Rentvine API: 401 Unauthorized — check RENTVINE_API_KEY and RENTVINE_API_SECRET")
                 return {}
             resp.raise_for_status()
             return resp.json()
