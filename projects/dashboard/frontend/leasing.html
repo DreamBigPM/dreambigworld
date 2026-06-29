@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Big PM — Leasing</title>
+<link rel="stylesheet" href="css/dashboard.css">
+<style>
+  .role-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #2563eb;
+    background: rgba(37,99,235,.10);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(37,99,235,.20);
+  }
+  .signout-btn {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: color .15s, border-color .15s;
+  }
+  .signout-btn:hover { color: var(--text); border-color: var(--muted); }
+
+  /* Expiration row items */
+  .exp-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    transition: background .12s;
+  }
+  .exp-row:last-child { border-bottom: none; }
+  .exp-row:hover { background: var(--surface-alt, #f9fafb); }
+  .exp-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    padding: 2px 7px;
+    border-radius: 12px;
+    white-space: nowrap;
+  }
+  .exp-badge.red   { background: #fef2f2; color: #dc2626; }
+  .exp-badge.amber { background: #fffbeb; color: #d97706; }
+  .exp-badge.blue  { background: #eff6ff; color: #2563eb; }
+  .exp-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: auto;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .exp-status.not_started    { background:#f1f5f9; color:#64748b; }
+  .exp-status.contacted      { background:#eff6ff; color:#2563eb; }
+  .exp-status.in_negotiation { background:#fffbeb; color:#d97706; }
+  .exp-status.signed         { background:#f0fdf4; color:#16a34a; }
+  .exp-status.lost           { background:#fef2f2; color:#dc2626; }
+
+  /* Vacant unit rows */
+  .vac-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .vac-row:last-child { border-bottom: none; }
+  .vac-row:hover { background: var(--surface-alt, #f9fafb); }
+  .vac-days {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+    margin-left: auto;
+  }
+  .vac-days.critical { background:#fef2f2; color:#dc2626; }
+  .vac-days.warn     { background:#fffbeb; color:#d97706; }
+  .vac-days.ok       { background:#f0fdf4; color:#16a34a; }
+
+  /* Status dropdown overlay */
+  .status-menu {
+    position: fixed;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.14);
+    z-index: 9000;
+    min-width: 160px;
+    overflow: hidden;
+    display: none;
+  }
+  .status-menu-item {
+    padding: 9px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-menu-item:hover { background: #f9fafb; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <img id="header-logo" src="/logo.png" alt="Dream Big PM" style="height:36px;object-fit:contain">
+  <div class="header-right">
+    <div id="sync-ts" style="font-size:12px;color:var(--muted)">Loading&hellip;</div>
+    <span class="role-badge">Leasing</span>
+    <div class="header-avatar" id="user-initials">—</div>
+    <form method="post" action="/auth/logout" style="margin:0">
+      <button type="submit" class="signout-btn">Sign Out</button>
+    </form>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- OFFLINE BANNER -->
+  <div id="offline-banner" style="display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 16px;margin-bottom:12px;font-size:13px;color:#92400e">
+    Dashboard offline &mdash; last data from <span id="offline-ts">unknown</span>
+  </div>
+
+  <!-- BRIEFING -->
+  <div class="section-label">AI Morning Briefing</div>
+  <div class="card briefing-card">
+    <div class="briefing-header" onclick="toggleBriefing()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 18px">
+      <div class="briefing-title">&#9733; Daily Briefing</div>
+      <span class="chevron open" id="briefing-chevron">&#9660;</span>
+    </div>
+    <div id="briefing-body" class="open" style="padding:0 18px 14px">
+      <div id="briefing-text" class="text-muted">Loading&hellip;</div>
+    </div>
+  </div>
+
+  <!-- KEY METRICS -->
+  <div class="section-label">Leasing Metrics</div>
+  <div id="kpi-grid">
+    <div class="kpi-card gray" id="kc-occ"><div class="kpi-name">Occupancy</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-dom"><div class="kpi-name">Days on Market</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-vac"><div class="kpi-name">Vacant Units</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-e30"><div class="kpi-name">Expiring ≤30 Days</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-e60"><div class="kpi-name">Expiring 31–60 Days</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-ren"><div class="kpi-name">Renewal Rate</div><div class="kpi-value">—</div></div>
+  </div>
+
+  <!-- VACANT UNITS -->
+  <div class="section-label" style="margin-top:20px">Vacant Units</div>
+  <div class="card" id="vac-card" style="padding:0">
+    <div id="vac-list"><div style="padding:18px;color:var(--muted);font-size:13px">Loading…</div></div>
+    <div id="vac-empty" style="display:none;padding:18px;color:var(--muted);font-size:13px;text-align:center">No vacant units — fully occupied!</div>
+  </div>
+
+  <!-- UPCOMING EXPIRATIONS -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+    <div class="section-label" style="margin:0">Upcoming Lease Expirations</div>
+    <div style="font-size:12px;color:var(--muted)">Click a status to update</div>
+  </div>
+  <div class="card" id="exp-card" style="padding:0;margin-top:8px">
+    <div id="exp-list"><div style="padding:18px;color:var(--muted);font-size:13px">Loading…</div></div>
+    <div id="exp-empty" style="display:none;padding:18px;color:var(--muted);font-size:13px;text-align:center">No leases expiring in the next 90 days.</div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- Status dropdown -->
+<div class="status-menu" id="status-menu">
+  <div class="status-menu-item" data-val="not_started"><span style="font-size:13px">○</span> Not Started</div>
+  <div class="status-menu-item" data-val="contacted"><span style="color:#2563eb">◉</span> Contacted</div>
+  <div class="status-menu-item" data-val="in_negotiation"><span style="color:#d97706">◐</span> In Negotiation</div>
+  <div class="status-menu-item" data-val="signed"><span style="color:#16a34a">●</span> Signed</div>
+  <div class="status-menu-item" data-val="lost"><span style="color:#dc2626">✕</span> Lost</div>
+</div>
+
+<script>
+// ─── Utilities ─────────────────────────────────────────────
+function fmtPct(n, d) { if (n == null) return '—'; return Number(n).toFixed(d == null ? 1 : d) + '%'; }
+function fmt$(n)  { if (n == null) return '—'; return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+function fmtTs(s) {
+  if (!s) return '—';
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  return d.toLocaleDateString('en-US', {month:'short', day:'numeric'}) + ' at ' +
+         d.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+}
+
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const d = new Date(dateStr + 'T00:00:00');
+  return Math.round((d - now) / 86400000);
+}
+
+// ─── KPI color logic ───────────────────────────────────────
+function kpiColor(key, val) {
+  if (val == null) return 'gray';
+  const v = Number(val);
+  const m = {
+    occupancy:      v => v >= 96 ? 'green' : v >= 91 ? 'yellow' : 'red',
+    days_on_market: v => v <= 21 ? 'green' : v <= 30 ? 'yellow' : 'red',
+    renewal_rate:   v => v >= 90 ? 'green' : v >= 80 ? 'yellow' : 'red',
+    vacant_count:   v => v === 0 ? 'green' : v <= 3 ? 'yellow' : 'red',
+    exp_30:         v => v === 0 ? 'green' : v <= 2 ? 'yellow' : 'red',
+    exp_60:         v => v <= 3 ? 'green' : v <= 6 ? 'yellow' : 'red',
+  };
+  return m[key] ? m[key](v) : 'gray';
+}
+const statusLabel = { green:'● On Target', yellow:'● Needs Attention', red:'● Below Target', gray:'— No Data' };
+
+function renderKPICard(id, label, key, val, display, unit, sub, target) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  const color = kpiColor(key, val);
+  card.className = 'kpi-card ' + color;
+  const valHtml = (display ?? '—') + (unit ? `<span class="kpi-unit"> ${unit}</span>` : '');
+  card.innerHTML =
+    `<div class="kpi-name">${label}</div>` +
+    `<div class="kpi-value">${valHtml}</div>` +
+    (target ? `<div class="kpi-target">${target}</div>` : '') +
+    (sub    ? `<div class="kpi-sub">${sub}</div>` : '') +
+    `<div class="kpi-status">${statusLabel[color]}</div>`;
+}
+
+// ─── Briefing ──────────────────────────────────────────────
+let briefingOpen = true;
+function toggleBriefing() {
+  briefingOpen = !briefingOpen;
+  document.getElementById('briefing-body').classList.toggle('open', briefingOpen);
+  document.getElementById('briefing-chevron').classList.toggle('open', briefingOpen);
+}
+function renderBriefing(data) {
+  const el = document.getElementById('briefing-text');
+  if (!data || !data.text || !data.text.trim()) {
+    el.innerHTML = '<span class="briefing-placeholder">Briefing will be ready at 6:05 am tomorrow.</span>';
+    return;
+  }
+
+  function highlightNums(text) {
+    return text.replace(/(\$[\d,]+(?:\.\d+)?|[\d.]+%|\d+ days?|\d+ units?|\d+ leases?)/g,
+      '<span class="briefing-num">$1</span>');
+  }
+
+  function parseBullet(text) {
+    const colonIdx = text.indexOf(': ');
+    if (colonIdx > 0 && colonIdx < 50) {
+      return { header: text.slice(0, colonIdx), body: text.slice(colonIdx + 2) };
+    }
+    return { header: null, body: text };
+  }
+
+  const todayKey = `briefing-checks-${new Date().toISOString().slice(0, 10)}`;
+  const checkedSet = new Set(JSON.parse(localStorage.getItem(todayKey) || '[]'));
+
+  const lines = data.text.trim().split('\n').filter(l => l.trim());
+  let headlineHtml = '';
+  let itemsHtml = '';
+  let bulletIdx = 0;
+
+  lines.forEach((line, i) => {
+    const trimmed = line.trim().replace(/\*\*/g, '');
+    if (/^[•\-]\s*First Principle/i.test(trimmed)) return;
+    if (i === 0 && !trimmed.startsWith('•') && !trimmed.startsWith('-')) {
+      headlineHtml = `<div class="briefing-headline">${highlightNums(trimmed)}</div>`;
+    } else {
+      const text = trimmed.replace(/^[•\-]\s*/, '');
+      const { header, body } = parseBullet(text);
+      const idx = bulletIdx++;
+      const done = checkedSet.has(idx);
+      itemsHtml += `<div class="briefing-item-card${done ? ' done' : ''}" data-idx="${idx}" onclick="_toggleBriefingCheck(${idx})">
+        <div class="briefing-check-box${done ? ' done' : ''}">${done ? '✓' : ''}</div>
+        <div class="briefing-item-content">
+          ${header ? `<div class="briefing-item-header">${header}</div>` : ''}
+          <div class="briefing-item-body">${highlightNums(body)}</div>
+        </div>
+      </div>`;
+    }
+  });
+
+  let principleHtml = '';
+  if (data.principle) {
+    const p = data.principle;
+    principleHtml = `<div class="principle-callout">
+      <div class="principle-callout-eyebrow">&#9733; Core Value of the Day</div>
+      <div class="principle-callout-title">${p.title}</div>
+      <div class="principle-callout-body">${p.body}</div>
+    </div>`;
+  }
+
+  el.innerHTML = headlineHtml + `<div class="briefing-items">${itemsHtml}</div>` + principleHtml;
+  el.className = '';
+}
+
+window._toggleBriefingCheck = function(idx) {
+  const todayKey = `briefing-checks-${new Date().toISOString().slice(0, 10)}`;
+  const checkedSet = new Set(JSON.parse(localStorage.getItem(todayKey) || '[]'));
+  if (checkedSet.has(idx)) checkedSet.delete(idx); else checkedSet.add(idx);
+  localStorage.setItem(todayKey, JSON.stringify([...checkedSet]));
+  const card = document.querySelector(`.briefing-item-card[data-idx="${idx}"]`);
+  const box  = card?.querySelector('.briefing-check-box');
+  const isDone = checkedSet.has(idx);
+  if (card) card.classList.toggle('done', isDone);
+  if (box)  { box.classList.toggle('done', isDone); box.textContent = isDone ? '✓' : ''; }
+};
+
+// ─── Render KPIs ───────────────────────────────────────────
+function renderKPIs(d) {
+  const occ = d.occupancy || {};
+  const dom = d.days_on_market || {};
+  const ren = d.renewal_rate || {};
+  const vac = d.vacancy_cost_clock || [];
+
+  renderKPICard('kc-occ', 'Occupancy', 'occupancy',
+    occ.pct, fmtPct(occ.pct, 1), null,
+    occ.pct != null ? (occ.occupied + ' / ' + occ.total + ' units') : '',
+    'Target ≥96%');
+
+  renderKPICard('kc-dom', 'Days on Market', 'days_on_market',
+    dom.avg_days,
+    dom.avg_days != null ? Math.round(dom.avg_days) : '—',
+    dom.avg_days != null ? 'days' : null,
+    dom.vacant_count != null ? dom.vacant_count + ' vacant units' : '',
+    'Target ≤21 days');
+
+  const vacCount = vac.length;
+  renderKPICard('kc-vac', 'Vacant Units', 'vacant_count',
+    vacCount, vacCount, null,
+    vacCount > 0 ? 'See list below' : 'Fully occupied',
+    'Target: 0');
+
+  const renVal = ren.monthly_pct ?? (ren.pct > 0 ? ren.pct : null);
+  renderKPICard('kc-ren', 'Renewal Rate', 'renewal_rate',
+    renVal, fmtPct(renVal, 1), null,
+    ren.rolling12_pct != null ? 'Rolling 12m: ' + fmtPct(ren.rolling12_pct, 1) : '',
+    'Target ≥90%');
+}
+
+function renderExpirationKPIs(records) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  let e30 = 0, e60 = 0;
+  (records || []).forEach(r => {
+    const days = daysUntil(r.end_date || r.lease_end_date);
+    if (days == null) return;
+    if (days >= 0 && days <= 30) e30++;
+    else if (days > 30 && days <= 60) e60++;
+  });
+  renderKPICard('kc-e30', 'Expiring ≤30 Days', 'exp_30',
+    e30, e30, null,
+    e30 > 0 ? 'Action needed' : 'None urgent',
+    'Target: 0 unsigned');
+  renderKPICard('kc-e60', 'Expiring 31–60 Days', 'exp_60',
+    e60, e60, null,
+    e60 > 0 ? 'Follow up now' : 'All clear',
+    'Target: contacted');
+}
+
+// ─── Vacant Units List ─────────────────────────────────────
+function renderVacantUnits(records) {
+  const list = document.getElementById('vac-list');
+  const empty = document.getElementById('vac-empty');
+  if (!records || records.length === 0) {
+    list.style.display = 'none';
+    empty.style.display = '';
+    return;
+  }
+  list.style.display = '';
+  empty.style.display = 'none';
+
+  const sorted = [...records].sort((a,b) => (b.days_vacant||0) - (a.days_vacant||0));
+  list.innerHTML = sorted.map(u => {
+    const days = u.days_vacant || 0;
+    const cls  = days >= 30 ? 'critical' : days >= 14 ? 'warn' : 'ok';
+    const cost = u.daily_cost_usd;
+    const addr = u.address || u.unit_address || u.property_name || '—';
+    const unit = u.unit_name ? ' · ' + u.unit_name : '';
+    return `<div class="vac-row">
+      <div>
+        <div style="font-weight:600;color:var(--text)">${addr}${unit}</div>
+        ${cost != null ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">${fmt$(cost)}/day · ${fmt$(days*cost)} lost so far</div>` : ''}
+      </div>
+      <span class="vac-days ${cls}">${days}d vacant</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── Expiration List ───────────────────────────────────────
+const STATUS_LABELS = {
+  not_started:    'Not Started',
+  contacted:      'Contacted',
+  in_negotiation: 'In Negotiation',
+  signed:         'Signed',
+  lost:           'Lost',
+};
+
+function expBadgeClass(days) {
+  if (days <= 0) return 'red';
+  if (days <= 30) return 'red';
+  if (days <= 60) return 'amber';
+  return 'blue';
+}
+function expBadgeText(days) {
+  if (days < 0) return Math.abs(days) + 'd overdue';
+  if (days === 0) return 'Today';
+  return days + ' days';
+}
+
+let _expRecords = [];
+
+function renderExpirations(records) {
+  _expRecords = records || [];
+  const list  = document.getElementById('exp-list');
+  const empty = document.getElementById('exp-empty');
+
+  const filtered = _expRecords
+    .map(r => ({ ...r, _days: daysUntil(r.end_date || r.lease_end_date) }))
+    .filter(r => r._days != null && r._days <= 90)
+    .sort((a,b) => a._days - b._days);
+
+  if (filtered.length === 0) {
+    list.style.display = 'none';
+    empty.style.display = '';
+    return;
+  }
+  list.style.display = '';
+  empty.style.display = 'none';
+
+  list.innerHTML = filtered.map(r => {
+    const days   = r._days;
+    const name   = r.tenant_name || r.tenant || '—';
+    const addr   = r.unit_address || r.address || r.property_name || '—';
+    const status = r.status || 'not_started';
+    const lid    = r.lease_id || r.id || '';
+    return `<div class="exp-row" data-lease="${lid}">
+      <span class="exp-badge ${expBadgeClass(days)}">${expBadgeText(days)}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${addr}</div>
+      </div>
+      <span class="exp-status ${status}" data-lease="${lid}" data-status="${status}" onclick="openStatusMenu(event, this)">${STATUS_LABELS[status] || status}</span>
+    </div>`;
+  }).join('');
+
+  renderExpirationKPIs(filtered);
+}
+
+// ─── Status Menu ───────────────────────────────────────────
+let _activeStatusEl = null;
+
+function openStatusMenu(e, el) {
+  e.stopPropagation();
+  _activeStatusEl = el;
+  const menu = document.getElementById('status-menu');
+  menu.style.display = 'block';
+  const rect = el.getBoundingClientRect();
+  let top = rect.bottom + 4, left = rect.left;
+  if (top + 200 > window.innerHeight) top = rect.top - 204;
+  if (left + 160 > window.innerWidth) left = window.innerWidth - 164;
+  menu.style.top  = top  + 'px';
+  menu.style.left = left + 'px';
+}
+
+document.addEventListener('click', () => {
+  document.getElementById('status-menu').style.display = 'none';
+  _activeStatusEl = null;
+});
+
+document.getElementById('status-menu').addEventListener('click', async e => {
+  const item = e.target.closest('.status-menu-item');
+  if (!item || !_activeStatusEl) return;
+  e.stopPropagation();
+  const newStatus = item.dataset.val;
+  const leaseId   = _activeStatusEl.dataset.lease;
+
+  try {
+    await fetch('/api/renewals/' + leaseId + '/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    // Update local record and re-render
+    const rec = _expRecords.find(r => String(r.lease_id || r.id) === String(leaseId));
+    if (rec) rec.status = newStatus;
+    renderExpirations(_expRecords);
+  } catch(err) {
+    console.error('Status update failed', err);
+  }
+  document.getElementById('status-menu').style.display = 'none';
+});
+
+// ─── Load Everything ───────────────────────────────────────
+async function loadAll() {
+  try {
+    const kpisRes = await fetch('/api/kpis?_=' + Date.now());
+    if (kpisRes.status === 401) { window.location.href = '/auth/login'; return; }
+    if (!kpisRes.ok) throw new Error('KPI ' + kpisRes.status);
+
+    const [kpis, briefingData, expiryData] = await Promise.all([
+      kpisRes.json(),
+      fetch('/api/briefing?role=leasing_agent').then(r => r.ok ? r.json() : null),
+      fetch('/api/drill/expiring_90').then(r => r.ok ? r.json() : null),
+    ]);
+
+    const ts = kpis._synced_at || kpis.refreshed_at;
+    document.getElementById('sync-ts').textContent = 'Synced: ' + fmtTs(ts);
+    document.getElementById('offline-banner').style.display = 'none';
+
+    renderKPIs(kpis);
+    if (briefingData) renderBriefing(briefingData);
+
+    const vacUnits = kpis.vacancy_cost_clock || [];
+    renderVacantUnits(vacUnits);
+
+    const expRecs = expiryData?.records || [];
+    renderExpirations(expRecs);
+    if (expRecs.length === 0) {
+      // Fallback: use pipeline data from renewal_rate if drill returns nothing
+      const pipe = kpis.renewal_rate?.pipeline || [];
+      renderExpirations(pipe);
+    }
+
+    // Show user initials
+    const meRes = await fetch('/auth/me');
+    if (meRes.ok) {
+      const me = await meRes.json();
+      const initials = (me.display_name || me.email || '?').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      document.getElementById('user-initials').textContent = initials;
+    }
+  } catch(e) {
+    document.getElementById('offline-banner').style.display = '';
+    document.getElementById('offline-ts').textContent = fmtTs(new Date().toISOString());
+    console.error(e);
+  }
+}
+
+loadAll();
+setInterval(loadAll, 5 * 60 * 1000);
+</script>
+</body>
+</html>

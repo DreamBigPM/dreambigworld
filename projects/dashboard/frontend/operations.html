@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Big PM — Operations</title>
+<link rel="stylesheet" href="css/dashboard.css">
+<style>
+  .role-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+  .signout-btn {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: color .15s, border-color .15s;
+  }
+  .signout-btn:hover { color: var(--text); border-color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <img id="header-logo" src="/logo.png" alt="Dream Big PM" style="height:36px;object-fit:contain">
+  <div class="header-right">
+    <div id="sync-ts" style="font-size:12px;color:var(--muted)">Loading&hellip;</div>
+    <span class="role-badge">Operations</span>
+    <div class="header-avatar" id="user-initials">—</div>
+    <form method="post" action="/auth/logout" style="margin:0">
+      <button type="submit" class="signout-btn">Sign Out</button>
+    </form>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- OFFLINE BANNER -->
+  <div id="offline-banner" style="display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 16px;margin-bottom:12px;font-size:13px;color:#92400e">
+    Dashboard offline &mdash; last data from <span id="offline-ts">unknown</span>
+  </div>
+
+  <!-- BRIEFING -->
+  <div class="section-label">AI Morning Briefing</div>
+  <div class="card briefing-card">
+    <div class="briefing-header" onclick="toggleBriefing()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 18px">
+      <div class="briefing-title">&#9733; Daily Briefing</div>
+      <span class="chevron open" id="briefing-chevron">&#9660;</span>
+    </div>
+    <div id="briefing-body" class="open" style="padding:0 18px 14px">
+      <div id="briefing-text" class="text-muted">Loading&hellip;</div>
+    </div>
+  </div>
+
+  <!-- COMMAND CENTER -->
+  <div class="section-label">Company KPIs</div>
+  <div id="kpi-grid">
+    <div class="kpi-card gray" id="kc-rent"><div class="kpi-name">Rent Collected</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-occ"><div class="kpi-name">Occupancy</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-dom"><div class="kpi-name">Days on Market</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-ren"><div class="kpi-name">Renewal Rate</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-sor"><div class="kpi-name">Speed of Repair</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-goog"><div class="kpi-name">Google Rating</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-doors"><div class="kpi-name">Total Doors</div><div class="kpi-value">—</div></div>
+  </div>
+
+  <!-- CLIENT GROWTH -->
+  <div class="section-label">Client Growth</div>
+  <div style="display:flex;gap:14px;justify-content:center;align-items:stretch;flex-wrap:wrap;margin-bottom:8px">
+    <div class="detail-card" style="flex:0 0 320px">
+      <div class="detail-card-hd">
+        <span class="dch-title">Client Churn</span>
+        <span class="dch-badge" id="churn-badge">—</span>
+      </div>
+      <div class="dc-body" style="padding:16px 18px;display:flex;align-items:center;gap:32px">
+        <div>
+          <div id="churn-pct-big" style="font-size:44px;font-weight:800;line-height:1;color:var(--text)">—</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px">YTD</div>
+        </div>
+        <div id="churn-sub" style="font-size:13px;color:var(--muted);line-height:1.8">Loading…</div>
+      </div>
+    </div>
+    <div class="detail-card" style="flex:0 0 192px">
+      <div class="detail-card-hd" style="cursor:default">
+        <span class="dch-title">Doors Added</span>
+        <span class="dch-badge clear" id="doors-added-badge">—</span>
+      </div>
+      <div class="dc-body" style="padding:16px 18px">
+        <div id="doors-added-big" style="font-size:44px;font-weight:800;line-height:1;color:#16a34a">—</div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px">This Year</div>
+      </div>
+    </div>
+    <div class="detail-card" style="flex:0 0 192px">
+      <div class="detail-card-hd" style="cursor:default">
+        <span class="dch-title">Doors Lost</span>
+        <span class="dch-badge danger" id="doors-lost-badge">—</span>
+      </div>
+      <div class="dc-body" style="padding:16px 18px">
+        <div id="doors-lost-big" style="font-size:44px;font-weight:800;line-height:1;color:#dc2626">—</div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px">This Year</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAILY ZERO GOALS -->
+  <div class="section-label" style="margin-top:20px">Daily Zero Goals</div>
+  <div id="zero-grid">
+    <div class="zero-card danger" onclick="openDrillDown('delinquency','Late Rent')">
+      <div class="zero-chevron">&#8250;</div>
+      <div class="zero-name">Late Rent</div>
+      <div class="zero-count" id="z-delinquent">&#8212;</div>
+      <div class="zero-badge" id="z-del-badge">&#8212;</div>
+    </div>
+    <div class="zero-card danger" onclick="openDrillDown('work_orders','Open Work Orders')">
+      <div class="zero-chevron">&#8250;</div>
+      <div class="zero-name">Open Work Orders</div>
+      <div class="zero-count" id="z-open-wo">&#8212;</div>
+      <div class="zero-badge" id="z-open-badge">&#8212;</div>
+    </div>
+    <div class="zero-card danger" onclick="openDrillDown('overdue_work_orders','Overdue Work Orders')">
+      <div class="zero-chevron">&#8250;</div>
+      <div class="zero-name">Overdue Work Orders</div>
+      <div class="zero-count" id="z-overdue-wo">&#8212;</div>
+      <div class="zero-badge" id="z-overdue-badge">&#8212;</div>
+    </div>
+    <div class="zero-card danger" onclick="openDrillDown('vacant_units','Vacant Units')">
+      <div class="zero-chevron">&#8250;</div>
+      <div class="zero-name">Vacant Units</div>
+      <div class="zero-count" id="z-vacant">&#8212;</div>
+      <div class="zero-badge" id="z-vacant-badge">&#8212;</div>
+      <div class="zero-sub loss" id="z-vacancy-loss"></div>
+    </div>
+  </div>
+
+  <!-- OPERATIONS DETAIL -->
+  <div class="section-label" style="margin-top:20px">Operations Detail</div>
+  <div class="detail-card-grid">
+
+    <!-- Delinquency card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="openDrillDown('rent_collected','Late Rent — Detail')">
+        <span class="dch-title">Delinquency &amp; Collections</span>
+        <span class="dch-badge danger" id="dc-del-badge">—</span>
+        <span class="dch-arrow">›</span>
+      </div>
+      <div class="dc-body">
+        <div id="compact-delinquency" class="compact-list">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+      <div class="dc-footer"><span class="dc-see-all" id="dc-del-seeall" onclick="openDrillDown('rent_collected','Late Rent — Detail')">See all →</span></div>
+    </div>
+
+    <!-- At-Risk card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="openDrillDown('at_risk','At-Risk Residents')">
+        <span class="dch-title">At-Risk Residents</span>
+        <span class="dch-badge warn" id="dc-risk-badge">—</span>
+        <span class="dch-arrow">›</span>
+      </div>
+      <div class="dc-body">
+        <div id="compact-at-risk" class="compact-list">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+      <div class="dc-footer"><span class="dc-see-all" onclick="openDrillDown('at_risk','At-Risk Residents')">See all →</span></div>
+    </div>
+
+    <!-- Open Work Orders card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="openDrillDown('work_orders','Open Work Orders')">
+        <span class="dch-title">Open Work Orders</span>
+        <span class="dch-badge danger" id="dc-wo-badge">—</span>
+        <span class="dch-arrow">›</span>
+      </div>
+      <div class="dc-body">
+        <div id="compact-wo" class="compact-list">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+      <div class="dc-footer"><span class="dc-see-all" id="dc-wo-seeall" onclick="openDrillDown('work_orders','Open Work Orders')">See all →</span></div>
+    </div>
+
+    <!-- Active Alerts card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="toggleAlerts()">
+        <span class="dch-title">Active Alerts</span>
+        <span class="alert-count-badge" id="alert-count-badge">—</span>
+        <span class="chevron" id="alerts-chevron">&#9660;</span>
+      </div>
+      <div class="dc-body">
+        <div id="alerts-list" class="open">
+          <div class="empty-state">Loading&hellip;</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vacancy Cost Clock card -->
+    <div class="detail-card" style="grid-column: 1 / -1;">
+      <div class="detail-card-hd" onclick="openDrillDown('vacant_units','Vacant Units — Revenue Lost')">
+        <span class="dch-title">Vacancy Cost Clock</span>
+        <span class="dch-badge danger" id="dc-vac-badge">—</span>
+        <span class="dch-arrow">›</span>
+      </div>
+      <div class="dc-body">
+        <div id="vacancy-clock-grid" class="compact-list">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /detail-card-grid -->
+
+  <!-- FINANCIAL PERFORMANCE -->
+  <div id="fin-section" style="display:none;margin-top:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span class="section-label" style="margin:0">Financial Performance</span>
+      <span id="fin-period-label" style="font-size:12px;color:#6b7280"></span>
+    </div>
+    <div id="fin-kpi-row" class="kpi-grid" style="margin-bottom:16px"></div>
+    <div id="qb-chart-section" style="display:none;margin-top:4px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af;margin-bottom:8px">Labor Efficiency</div>
+      <div id="qb-chart-container" style="width:100%;overflow-x:auto"></div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af;margin:16px 0 8px">Revenue &amp; Profit Per Door</div>
+      <div id="qb-profit-chart-container" style="width:100%;overflow-x:auto"></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- FIN DETAIL MODAL -->
+<div id="fin-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500" onclick="closeFinModal()"></div>
+<div id="fin-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;padding:28px;width:460px;max-width:94vw;z-index:501;box-shadow:0 12px 40px rgba(0,0,0,.18)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+    <span id="fin-modal-title" style="font-size:16px;font-weight:700"></span>
+    <button onclick="closeFinModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;line-height:1">&times;</button>
+  </div>
+  <div id="fin-modal-body" style="font-size:13px;line-height:1.7;color:#374151"></div>
+</div>
+
+<!-- DRILL-DOWN DRAWER -->
+<div id="drawer-overlay" onclick="closeDrillDown()"></div>
+<div id="drill-drawer">
+  <div id="drawer-header">
+    <button id="drawer-back" onclick="drawerGoBack()" style="display:none">&#x2190; Back</button>
+    <div id="drawer-title">Details</div>
+    <button id="drawer-close" onclick="closeDrillDown()">&#x2715;</button>
+  </div>
+  <div id="drawer-body">
+    <div class="drawer-loading">Loading&hellip;</div>
+  </div>
+</div>
+
+<script>
+// ─── Utilities ────────────────────────────────────────────
+function fmt$(n)  { if (n == null) return '—'; return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+function fmtPct(n, d) { if (n == null) return '—'; return Number(n).toFixed(d == null ? 1 : d) + '%'; }
+function fmtTs(s) {
+  if (!s) return '—';
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  return d.toLocaleDateString('en-US', {month:'short', day:'numeric'}) + ' at ' +
+         d.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+}
+
+// ─── Extra helpers ────────────────────────────────────────
+function trunc(s, n) { if (!s) return '—'; return s.length > n ? s.slice(0, n) + '…' : s; }
+function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(s) { if (!s) return '—'; const d = new Date(s.includes('T') ? s : s + 'T00:00:00'); return d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}); }
+function daysFromNow(s) { if (!s) return null; const d = new Date(s + 'T00:00:00'); return Math.round((d - Date.now()) / 86400000); }
+
+let lastKpis = null;
+let allWOs = [];
+let woShowAll = false;
+let alertsOpen = true;
+
+// ─── KPI color logic ──────────────────────────────────────
+function kpiColor(key, val) {
+  if (val == null) return 'gray';
+  const v = Number(val);
+  const m = {
+    rent_collected: v => v >= 98 ? 'green' : v >= 93 ? 'yellow' : 'red',
+    occupancy:      v => v >= 96 ? 'green' : v >= 91 ? 'yellow' : 'red',
+    days_on_market: v => v <= 21 ? 'green' : v <= 30 ? 'yellow' : 'red',
+    renewal_rate:   v => v >= 90 ? 'green' : v >= 80 ? 'yellow' : 'red',
+    speed_of_repair:v => v <= 3  ? 'green' : v <= 7  ? 'yellow' : 'red',
+    google_rating:  v => v >= 4.8 ? 'green' : v >= 4.5 ? 'yellow' : 'red',
+  };
+  return m[key] ? m[key](v) : 'gray';
+}
+const statusLabel = { green:'● On Target', yellow:'● Needs Attention', red:'● Below Target', gray:'— No Data' };
+
+function setKPICard(id, key, val, display, sub, target) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  const color = kpiColor(key, val);
+  card.className = 'kpi-card ' + color;
+  card.querySelector('.kpi-value').textContent = display ?? '—';
+  let html = `<div class="kpi-name">${card.querySelector('.kpi-name').textContent}</div>`;
+  card.innerHTML = `<div class="kpi-name">${card.querySelector ? '' : ''}</div>`;
+  // Rebuild card content
+  card.innerHTML =
+    `<div class="kpi-status">${statusLabel[color]}</div>` +
+    `<div class="kpi-name">${card.dataset.label || ''}</div>` +
+    `<div class="kpi-value">${display ?? '—'}</div>` +
+    (sub ? `<div class="kpi-sub">${sub}</div>` : '') +
+    (target ? `<div class="kpi-target">${target}</div>` : '');
+}
+
+function renderKPICard(id, label, key, val, display, unit, sub, target) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  const color = kpiColor(key, val);
+  card.className = 'kpi-card ' + color;
+  const valHtml = (display ?? '—') + (unit ? `<span class="kpi-unit"> ${unit}</span>` : '');
+  card.innerHTML =
+    `<div class="kpi-name">${label}</div>` +
+    `<div class="kpi-value">${valHtml}</div>` +
+    (target ? `<div class="kpi-target">${target}</div>` : '') +
+    (sub    ? `<div class="kpi-sub">${sub}</div>` : '') +
+    `<div class="kpi-status">${statusLabel[color]}</div>`;
+}
+
+// ─── Render KPIs ─────────────────────────────────────────
+function renderKPIs(d) {
+  const rent  = d.rent_collected;
+  const occ   = d.occupancy;
+  const dom   = d.days_on_market;
+  const ren   = d.renewal_rate;
+  const sor   = d.speed_of_repair;
+
+  renderKPICard('kc-rent', 'Rent Collected', 'rent_collected',
+    rent?.pct, fmtPct(rent?.pct, 1), null,
+    rent?.pct != null ? fmt$(rent.collected_usd) + ' / ' + fmt$(rent.expected_usd) : '',
+    'Target ≥98%');
+
+  renderKPICard('kc-occ', 'Occupancy', 'occupancy',
+    occ?.pct, fmtPct(occ?.pct, 1), null,
+    occ?.pct != null ? (occ.occupied + ' / ' + occ.total + ' units') : '',
+    'Target ≥96%');
+
+  renderKPICard('kc-dom', 'Days on Market', 'days_on_market',
+    dom?.avg_days,
+    dom?.avg_days != null ? Math.round(dom.avg_days) : '—',
+    dom?.avg_days != null ? 'days' : null,
+    dom?.vacant_count != null ? dom.vacant_count + ' vacant units' : '',
+    'Target ≤21 days');
+
+  const renVal = ren?.monthly_pct ?? (ren?.pct > 0 ? ren.pct : null);
+  renderKPICard('kc-ren', 'Renewal Rate', 'renewal_rate',
+    renVal, fmtPct(renVal, 1), null,
+    ren?.rolling12_pct != null ? 'Rolling 12m: ' + fmtPct(ren.rolling12_pct, 1) : '',
+    'Target ≥90%');
+
+  const sorVal = sor?.avg_days_to_close;
+  renderKPICard('kc-sor', 'Speed of Repair', 'speed_of_repair',
+    sorVal,
+    sorVal != null ? sorVal.toFixed(1) : '—',
+    sorVal != null ? 'days' : null,
+    (sor?.open_count ?? 0) + ' open, ' + (sor?.overdue_count ?? 0) + ' overdue',
+    'Target ≤3 days');
+
+  const goog = d.google_rating;
+  renderKPICard('kc-goog', 'Google Rating', 'google_rating',
+    goog, goog != null ? goog.toFixed(1) : '—', goog != null ? '★' : null,
+    '', 'Target ≥4.8');
+
+  const doors = occ?.total ?? d.resident_count ?? null;
+  const doorCard = document.getElementById('kc-doors');
+  if (doorCard) {
+    doorCard.className = 'kpi-card gray';
+    doorCard.innerHTML =
+      `<div class="kpi-name">Total Doors</div>` +
+      `<div class="kpi-value">${doors ?? '—'}</div>` +
+      `<div class="kpi-status">— Portfolio Size</div>`;
+  }
+}
+
+// ─── Render Briefing ─────────────────────────────────────
+let briefingOpen = true;
+function toggleBriefing() {
+  briefingOpen = !briefingOpen;
+  document.getElementById('briefing-body').classList.toggle('open', briefingOpen);
+  document.getElementById('briefing-chevron').classList.toggle('open', briefingOpen);
+}
+
+function renderBriefing(data) {
+  const el = document.getElementById('briefing-text');
+  if (!data || !data.text || !data.text.trim()) {
+    el.innerHTML = '<span class="briefing-placeholder">Briefing will be ready at 6:05 am tomorrow.</span>';
+    return;
+  }
+
+  function highlightNums(text) {
+    return text.replace(/(\$[\d,]+(?:\.\d+)?|[\d.]+%|\d+ days?|\d+ units?|\d+ leases?)/g,
+      '<span class="briefing-num">$1</span>');
+  }
+
+  function parseBullet(text) {
+    const colonIdx = text.indexOf(': ');
+    if (colonIdx > 0 && colonIdx < 50) {
+      return { header: text.slice(0, colonIdx), body: text.slice(colonIdx + 2) };
+    }
+    return { header: null, body: text };
+  }
+
+  const todayKey = `briefing-checks-${new Date().toISOString().slice(0, 10)}`;
+  const checkedSet = new Set(JSON.parse(localStorage.getItem(todayKey) || '[]'));
+
+  const lines = data.text.trim().split('\n').filter(l => l.trim());
+  let headlineHtml = '';
+  let itemsHtml = '';
+  let bulletIdx = 0;
+
+  lines.forEach((line, i) => {
+    const trimmed = line.trim().replace(/\*\*/g, '');
+    if (/^[•\-]\s*First Principle/i.test(trimmed)) return;
+    if (i === 0 && !trimmed.startsWith('•') && !trimmed.startsWith('-')) {
+      headlineHtml = `<div class="briefing-headline">${highlightNums(trimmed)}</div>`;
+    } else {
+      const text = trimmed.replace(/^[•\-]\s*/, '');
+      const { header, body } = parseBullet(text);
+      const idx = bulletIdx++;
+      const done = checkedSet.has(idx);
+      itemsHtml += `<div class="briefing-item-card${done ? ' done' : ''}" data-idx="${idx}" onclick="_toggleBriefingCheck(${idx})">
+        <div class="briefing-check-box${done ? ' done' : ''}">${done ? '✓' : ''}</div>
+        <div class="briefing-item-content">
+          ${header ? `<div class="briefing-item-header">${header}</div>` : ''}
+          <div class="briefing-item-body">${highlightNums(body)}</div>
+        </div>
+      </div>`;
+    }
+  });
+
+  let principleHtml = '';
+  if (data.principle) {
+    const p = data.principle;
+    principleHtml = `<div class="principle-callout">
+      <div class="principle-callout-eyebrow">&#9733; Core Value of the Day</div>
+      <div class="principle-callout-title">${p.title}</div>
+      <div class="principle-callout-body">${p.body}</div>
+    </div>`;
+  }
+
+  el.innerHTML = headlineHtml + `<div class="briefing-items">${itemsHtml}</div>` + principleHtml;
+  el.className = '';
+}
+
+window._toggleBriefingCheck = function(idx) {
+  const todayKey = `briefing-checks-${new Date().toISOString().slice(0, 10)}`;
+  const checkedSet = new Set(JSON.parse(localStorage.getItem(todayKey) || '[]'));
+  if (checkedSet.has(idx)) checkedSet.delete(idx); else checkedSet.add(idx);
+  localStorage.setItem(todayKey, JSON.stringify([...checkedSet]));
+  const card = document.querySelector(`.briefing-item-card[data-idx="${idx}"]`);
+  const box  = card?.querySelector('.briefing-check-box');
+  const isDone = checkedSet.has(idx);
+  if (card) card.classList.toggle('done', isDone);
+  if (box)  { box.classList.toggle('done', isDone); box.textContent = isDone ? '✓' : ''; }
+};
+
+// ─── Render Churn ────────────────────────────────────────
+function churnColor(pct) {
+  if (pct == null) return 'var(--text)';
+  return pct <= 5 ? '#16a34a' : pct <= 10 ? '#d97706' : '#dc2626';
+}
+function churnBadgeClass(pct) {
+  if (pct == null) return '';
+  return pct <= 5 ? 'clear' : pct <= 10 ? 'warn' : 'danger';
+}
+
+function renderChurn(data) {
+  if (!data || !data.connected) {
+    document.getElementById('churn-pct-big').textContent = '—';
+    document.getElementById('churn-badge').textContent   = 'Not connected';
+    document.getElementById('churn-sub').textContent     = '';
+    return;
+  }
+  const pct = data.current_churn_pct;
+  const big = document.getElementById('churn-pct-big');
+  big.textContent  = pct != null ? pct.toFixed(2) + '%' : '—';
+  big.style.color  = churnColor(pct);
+
+  const badge = document.getElementById('churn-badge');
+  badge.textContent = pct != null ? pct.toFixed(2) + '%' : '—';
+  badge.className   = 'dch-badge ' + churnBadgeClass(pct);
+
+  document.getElementById('churn-sub').innerHTML = [
+    `<strong>${data.current_offboards ?? 0}</strong> offboards / <strong>${data.current_start_doors ?? 0}</strong> doors at Jan 1`,
+    `<strong>${data.current_door_count ?? 0}</strong> doors today`,
+  ].join(' &nbsp;·&nbsp; ');
+
+  const adds = data.current_adds ?? 0;
+  const lost = data.current_offboards ?? 0;
+  document.getElementById('doors-added-big').textContent  = adds;
+  document.getElementById('doors-added-badge').textContent = adds;
+  document.getElementById('doors-lost-big').textContent   = lost;
+  document.getElementById('doors-lost-badge').textContent = lost;
+}
+
+// ─── Financial current-period KPI row ────────────────────
+let lastFinancials = null;
+
+const FIN_THRESHOLDS = {
+  revenue:    { green: v => v > 0,    yellow: v => v > 0,    fmt: v => '$' + Math.round(v).toLocaleString() },
+  net_income: { green: v => v > 0,    yellow: v => v > -5000, fmt: v => (v < 0 ? '-$' : '$') + Math.abs(Math.round(v)).toLocaleString() },
+  rpu:        { green: v => v >= 335,  yellow: v => v >= 268,  fmt: v => '$' + Math.round(v) + '<span class="kpi-unit">/door</span>' },
+  ppu:        { green: v => v >= 50,   yellow: v => v >= 0,    fmt: v => (v < 0 ? '-$' : '$') + Math.abs(Math.round(v)) + '<span class="kpi-unit">/door</span>' },
+  dler:       { green: v => v >= 4.51, yellow: v => v >= 3.61, fmt: v => v.toFixed(2) },
+  mler:       { green: v => v >= 3.89, yellow: v => v >= 3.11, fmt: v => v.toFixed(2) },
+  tler:       { green: v => v >= 2.05, yellow: v => v >= 1.64, fmt: v => v.toFixed(2) },
+};
+const FIN_NAMES = {
+  revenue: 'Revenue', net_income: 'Net Income',
+  rpu: 'Revenue/Door', ppu: 'Profit/Door',
+  dler: 'Direct Labor (DLER)', mler: 'Mgmt Labor (MLER)', tler: 'Total Labor (TLER)',
+};
+const FIN_TARGETS = {
+  revenue: '', net_income: '',
+  rpu: 'NARPM $335/door', ppu: 'NARPM $50/door',
+  dler: 'NARPM 4.51', mler: 'NARPM 3.89', tler: 'NARPM 2.05',
+};
+
+function finColor(key, val) {
+  const t = FIN_THRESHOLDS[key];
+  if (!t || val == null) return 'gray';
+  if (t.green(val)) return 'green';
+  if (t.yellow(val)) return 'yellow';
+  return 'red';
+}
+
+function renderFinKPIs(data) {
+  if (!data || !data.metrics) return;
+  lastFinancials = data;
+  const m  = data.metrics;
+  const bd = m.breakdown || {};
+  const period = data.period || '';
+  document.getElementById('fin-period-label').textContent = period;
+  document.getElementById('fin-section').style.display = '';
+
+  const vals = {
+    revenue: bd.gross_revenue, net_income: bd.net_income,
+    rpu: m.rpu, ppu: m.ppu, dler: m.dler, mler: m.mler, tler: m.tler,
+  };
+  const keys = ['revenue', 'net_income', 'rpu', 'ppu', 'dler', 'mler', 'tler'];
+
+  document.getElementById('fin-kpi-row').innerHTML = keys.map(k => {
+    const val   = vals[k];
+    const color = finColor(k, val);
+    const t     = FIN_THRESHOLDS[k];
+    const disp  = val != null ? t.fmt(val) : '—';
+    const dispColor = { green:'#16A34A', red:'#DC2626', yellow:'#DC2626', gray:'#8A9099' }[color];
+    const statusText = { green:'● On Benchmark', yellow:'● Below Benchmark', red:'● Below Benchmark', gray:'— No Data' }[color];
+    const hasModal = ['rpu','ppu','dler','mler','tler'].includes(k);
+    return `<div class="kpi-card ${color === 'yellow' ? 'red' : color}" style="cursor:${hasModal ? 'pointer' : 'default'}" ${hasModal ? `onclick="openFinModal('${k}')"` : ''}>
+      <div class="kpi-name">${FIN_NAMES[k]}</div>
+      <div class="kpi-value" style="color:${dispColor}">${disp}</div>
+      ${FIN_TARGETS[k] ? `<div class="kpi-target">${FIN_TARGETS[k]}</div>` : ''}
+      <div class="kpi-status">${statusText}</div>
+    </div>`;
+  }).join('');
+}
+
+function openFinModal(key) {
+  if (!lastFinancials || !lastFinancials.metrics) return;
+  const m  = lastFinancials.metrics;
+  const bd = m.breakdown || {};
+  const gr = bd.gross_revenue || 0;
+  const dc = bd.door_count    || 0;
+
+  const fmtD = v => '$' + Math.abs(v).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  const titles = {
+    rpu: 'Revenue Per Unit (RPU)', ppu: 'Profit Per Unit (PPU)',
+    dler: 'Direct Labor Efficiency Ratio (DLER)',
+    mler: 'Management Labor Efficiency Ratio (MLER)',
+    tler: 'Total Labor Efficiency Ratio (TLER)',
+  };
+
+  let html = '';
+  if (key === 'rpu') {
+    html = `<div style="margin-bottom:10px"><strong>Formula:</strong> Revenue ÷ Door Count</div>
+      <table class="fin-detail-table">
+        <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmtD(gr)}</td></tr>
+        <tr class="fin-total"><td style="font-weight:700">Door Count</td><td style="text-align:right;font-weight:700">${dc}</td></tr>
+      </table>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        ${fmtD(gr)} ÷ ${dc} = <span style="color:${m.rpu>=335?'#16a34a':'#dc2626'}">${fmtD(m.rpu)}/door</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: $335/door</div>`;
+  } else if (key === 'ppu') {
+    html = `<div style="margin-bottom:10px"><strong>Formula:</strong> Net Income ÷ Door Count</div>
+      <table class="fin-detail-table">
+        <tr><td style="color:#6b7280">Net Income</td><td style="text-align:right;font-weight:600">${bd.net_income<0?'−':''}${fmtD(bd.net_income)}</td></tr>
+        <tr class="fin-total"><td style="font-weight:700">Door Count</td><td style="text-align:right;font-weight:700">${dc}</td></tr>
+      </table>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        ${bd.net_income<0?'−':''}${fmtD(bd.net_income)} ÷ ${dc} = <span style="color:${m.ppu>=50?'#16a34a':'#dc2626'}">${m.ppu<0?'−':''}${fmtD(Math.abs(m.ppu))}/door</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: $50/door</div>`;
+  } else if (key === 'dler') {
+    const rows = (bd.dler_items||[]).map(i =>
+      `<tr><td style="color:#6b7280">${i.gl}&nbsp;${i.name}</td><td style="text-align:right;font-weight:500">${fmtD(i.amount)}</td></tr>`).join('');
+    html = `<div style="margin-bottom:4px"><strong>Formula:</strong> Revenue ÷ Direct Labor</div>
+      <div style="margin-bottom:10px;font-size:12px;color:#6b7280">For every $1 of direct labor, how many dollars of revenue?</div>
+      <table class="fin-detail-table">${rows}
+        <tr class="fin-total"><td style="font-weight:700">Total Direct Labor</td><td style="text-align:right;font-weight:700">${fmtD(bd.direct_labor)}</td></tr>
+        <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmtD(gr)}</td></tr>
+      </table>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        ${fmtD(gr)} ÷ ${fmtD(bd.direct_labor)} = <span style="color:${m.dler>=4.51?'#16a34a':'#dc2626'}">${m.dler.toFixed(2)}</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: 4.51 · Higher is better</div>`;
+  } else if (key === 'mler') {
+    const rows = (bd.mler_items||[]).map(i =>
+      `<tr><td style="color:#6b7280">${i.gl}&nbsp;${i.name}</td><td style="text-align:right;font-weight:500">${fmtD(i.amount)}</td></tr>`).join('');
+    html = `<div style="margin-bottom:4px"><strong>Formula:</strong> Revenue ÷ Management Labor</div>
+      <div style="margin-bottom:10px;font-size:12px;color:#6b7280">For every $1 of management labor, how many dollars of revenue?</div>
+      <table class="fin-detail-table">${rows}
+        <tr class="fin-total"><td style="font-weight:700">Total Mgmt Labor</td><td style="text-align:right;font-weight:700">${fmtD(bd.mgmt_labor)}</td></tr>
+        <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmtD(gr)}</td></tr>
+      </table>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        ${fmtD(gr)} ÷ ${fmtD(bd.mgmt_labor)} = <span style="color:${m.mler>=3.89?'#16a34a':'#dc2626'}">${m.mler.toFixed(2)}</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: 3.89 · Higher is better</div>`;
+  } else if (key === 'tler') {
+    html = `<div style="margin-bottom:4px"><strong>Formula:</strong> Revenue ÷ Total Labor</div>
+      <div style="margin-bottom:10px;font-size:12px;color:#6b7280">For every $1 of total labor (direct + management), how many dollars of revenue?</div>
+      <table class="fin-detail-table">
+        <tr><td style="color:#6b7280">Direct Labor</td><td style="text-align:right;font-weight:500">${fmtD(bd.direct_labor)}</td></tr>
+        <tr><td style="color:#6b7280">Mgmt Labor</td><td style="text-align:right;font-weight:500">${fmtD(bd.mgmt_labor)}</td></tr>
+        <tr class="fin-total"><td style="font-weight:700">Total Labor</td><td style="text-align:right;font-weight:700">${fmtD(bd.direct_labor + bd.mgmt_labor)}</td></tr>
+        <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmtD(gr)}</td></tr>
+      </table>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        ${fmtD(gr)} ÷ ${fmtD(bd.direct_labor + bd.mgmt_labor)} = <span style="color:${m.tler>=2.05?'#16a34a':'#dc2626'}">${m.tler.toFixed(2)}</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: 2.05 · Higher is better</div>`;
+  }
+
+  document.getElementById('fin-modal-title').textContent = titles[key] || key;
+  document.getElementById('fin-modal-body').innerHTML    = html;
+  document.getElementById('fin-modal-overlay').style.display = 'block';
+  document.getElementById('fin-modal').style.display         = 'block';
+}
+
+function closeFinModal() {
+  document.getElementById('fin-modal-overlay').style.display = 'none';
+  document.getElementById('fin-modal').style.display         = 'none';
+}
+
+// ─── Chart functions (Labor Efficiency + RPU/PPU) ────────
+function _ensureFinTip() {
+  let tip = document.getElementById('_fin-tip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = '_fin-tip';
+    tip.style.cssText = 'position:fixed;pointer-events:none;display:none;background:#1f2937;color:#fff;border-radius:8px;padding:10px 14px;font-family:system-ui,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:9999;min-width:120px';
+    document.body.appendChild(tip);
+  }
+  return tip;
+}
+function _posFinTip(e) {
+  const tip = document.getElementById('_fin-tip');
+  if (!tip || tip.style.display === 'none') return;
+  const x = e.clientX + 16, y = e.clientY - 30;
+  tip.style.left = Math.min(x, window.innerWidth - tip.offsetWidth - 12) + 'px';
+  tip.style.top  = Math.max(y, 8) + 'px';
+}
+function _showFinTip(e, el) {
+  const tip = _ensureFinTip();
+  const ALL = [
+    {key:'dler', label:'DLER', color:'#FF7417', bench:4.51},
+    {key:'mler', label:'MLER', color:'#16A34A', bench:3.89},
+    {key:'tler', label:'TLER', color:'#6366F1', bench:2.05},
+  ];
+  const rows = ALL.map(sr => {
+    const v = parseFloat(el.dataset[sr.key]);
+    if (isNaN(v)) return '';
+    const above = v >= sr.bench;
+    return `<div style="display:flex;align-items:baseline;gap:8px;margin-top:7px">` +
+      `<span style="font-size:11px;font-weight:700;color:${sr.color};min-width:32px">${sr.label}</span>` +
+      `<span style="font-size:24px;font-weight:700;color:${sr.color};line-height:1">${v.toFixed(2)}</span>` +
+      `<span style="font-size:11px;color:${above?'#4ade80':'#f87171'}">${above?'▲':'▼'}&thinsp;${sr.bench}</span>` +
+      `</div>`;
+  }).join('');
+  tip.innerHTML = `<div style="font-size:11px;color:#9ca3af;margin-bottom:2px">${el.dataset.period}</div>` + rows;
+  tip.style.display = 'block';
+  _posFinTip(e);
+}
+function _hideFinTip() {
+  const tip = document.getElementById('_fin-tip');
+  if (tip) tip.style.display = 'none';
+}
+
+function renderFinChart(months) {
+  const section   = document.getElementById('qb-chart-section');
+  const container = document.getElementById('qb-chart-container');
+  const clean = (months || []).filter(m => { const d = m.metrics; return d && d.dler < 20 && d.mler < 20 && d.tler < 20; });
+  if (clean.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  const W = 620, H = 210, pL = 36, pR = 16, pT = 30, pB = 30;
+  const plotW = W - pL - pR, plotH = H - pT - pB;
+  const SERIES = [
+    { key:'dler', label:'DLER', color:'#FF7417', bench:4.51 },
+    { key:'mler', label:'MLER', color:'#16A34A', bench:3.89 },
+    { key:'tler', label:'TLER', color:'#6366F1', bench:2.05 },
+  ];
+  const allVals = SERIES.flatMap(s => clean.map(m => m.metrics[s.key]).filter(v => v != null));
+  const rawMax  = Math.max(...allVals, ...SERIES.map(s => s.bench)) * 1.12;
+  const roughStep = rawMax / 5;
+  const mag     = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const step    = ([1, 2, 2.5, 5, 10].find(p => p * mag >= roughStep) || 10) * mag;
+  const yMax    = Math.ceil(rawMax / step) * step;
+  const yTicks  = []; for (let t = 0; t <= yMax + 1e-9; t = Math.round((t+step)*1000)/1000) yTicks.push(t);
+  const n = clean.length;
+  const xPos = i => pL + (n > 1 ? (i/(n-1)) * plotW : plotW/2);
+  const yPos = v => pT + plotH * (1 - v/yMax);
+
+  let s = '';
+  yTicks.forEach(t => {
+    const y = yPos(t).toFixed(1);
+    s += `<line x1="${pL}" y1="${y}" x2="${W-pR}" y2="${y}" stroke="${t===0?'#d1d5db':'#f0f2f4'}" stroke-width="1"/>`;
+    s += `<text x="${pL-5}" y="${(+y+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#b0b7c0" font-family="system-ui,sans-serif">${Number.isInteger(t)?t:t.toFixed(1)}</text>`;
+  });
+  s += `<line x1="${pL}" y1="${(pT+plotH).toFixed(1)}" x2="${W-pR}" y2="${(pT+plotH).toFixed(1)}" stroke="#e5e7eb" stroke-width="1"/>`;
+  SERIES.forEach(sr => {
+    const y = yPos(sr.bench).toFixed(1);
+    s += `<line x1="${pL}" y1="${y}" x2="${W-pR}" y2="${y}" stroke="${sr.color}" stroke-width="1" stroke-dasharray="3,4" opacity="0.35"/>`;
+  });
+  SERIES.forEach(sr => {
+    const pts = clean.map((m,i) => { const v = m.metrics[sr.key]; return v!=null?`${xPos(i).toFixed(1)},${yPos(v).toFixed(1)}`:null; }).filter(Boolean);
+    if (pts.length > 1) s += `<polyline points="${pts.join(' ')}" fill="none" stroke="${sr.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    clean.forEach((m,i) => {
+      const v = m.metrics[sr.key]; if (v==null) return;
+      const cx = xPos(i).toFixed(1), cy = yPos(v).toFixed(1);
+      s += `<circle cx="${cx}" cy="${cy}" r="5" fill="${sr.color}" stroke="#fff" stroke-width="1.5" style="cursor:pointer" data-label="${sr.label}" data-value="${v}" data-bench="${sr.bench}" data-period="${m.period}" data-dler="${m.metrics.dler??''}" data-mler="${m.metrics.mler??''}" data-tler="${m.metrics.tler??''}"/>`;
+    });
+  });
+  const skip = clean.length > 8 ? 2 : 1;
+  clean.forEach((m,i) => {
+    if (i%skip!==0 && i!==clean.length-1) return;
+    const [mon,yr] = m.period.split(' ');
+    s += `<text x="${xPos(i).toFixed(1)}" y="${(pT+plotH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="#8a9099" font-family="system-ui,sans-serif">${mon.slice(0,3)+(yr?' \''+yr.slice(-2):'')}</text>`;
+  });
+  SERIES.forEach((sr,i) => {
+    const lx = pL + i*162;
+    s += `<circle cx="${lx+5}" cy="15" r="3.5" fill="${sr.color}"/>`;
+    s += `<text x="${lx+13}" y="19" font-size="10" fill="#6b7280" font-family="system-ui,sans-serif">${sr.label}</text>`;
+    s += `<text x="${lx+37}" y="19" font-size="10" fill="#b0b7c0" font-family="system-ui,sans-serif">bench ${sr.bench}</text>`;
+  });
+
+  const hdrCells = clean.map(m => { const [mon,yr]=m.period.split(' '); return `<th style="text-align:right;padding:4px 10px;font-size:10px;font-weight:600;letter-spacing:.05em;color:#9ca3af;border-bottom:1px solid #e5e7eb;border-top:none;background:none;text-transform:uppercase">${mon.slice(0,3)+(yr?' \''+yr.slice(-2):'')}</th>`; }).join('');
+  const bodyRows = SERIES.map(sr => {
+    const cells = clean.map(m => { const v=m.metrics[sr.key]; if(v==null)return `<td style="text-align:right;padding:3px 10px;color:#9ca3af;border:none;background:none">—</td>`; const c=v>=sr.bench?'#16a34a':'#dc2626'; return `<td style="text-align:right;padding:3px 10px;font-weight:600;font-size:12px;color:${c};border:none;background:none">${v.toFixed(2)}</td>`; }).join('');
+    return `<tr><td style="padding:3px 10px;font-size:11px;font-weight:700;color:${sr.color};border:none;background:none;letter-spacing:.04em">${sr.label}</td>${cells}</tr>`;
+  }).join('');
+
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block">${s}</svg><table style="border-collapse:collapse;font-family:system-ui,sans-serif;margin-top:2px"><thead><tr><th style="padding:4px 10px;border-bottom:1px solid #e5e7eb;border-top:none;background:none"></th>${hdrCells}</tr></thead><tbody>${bodyRows}</tbody></table>`;
+  const svg = container.querySelector('svg');
+  if (svg) {
+    svg.addEventListener('mouseover', e => { if (e.target.tagName==='circle' && e.target.dataset.label) _showFinTip(e, e.target); });
+    svg.addEventListener('mousemove', _posFinTip);
+    svg.addEventListener('mouseout',  e => { if (e.target.tagName==='circle') _hideFinTip(); });
+  }
+}
+
+function renderProfitChart(months) {
+  const container = document.getElementById('qb-profit-chart-container');
+  if (!container) return;
+  const clean = (months||[]).filter(m => m.metrics && m.metrics.rpu!=null && m.metrics.ppu!=null);
+  if (clean.length === 0) { container.innerHTML = ''; return; }
+
+  const W=620, H=200, pL=46, pR=16, pT=28, pB=30;
+  const plotW=W-pL-pR, plotH=H-pT-pB;
+  const SERIES = [ {key:'rpu',label:'RPU',color:'#FF7417',bench:335}, {key:'ppu',label:'PPU',color:'#6366F1',bench:50} ];
+  const allVals = SERIES.flatMap(s => clean.map(m => m.metrics[s.key]).filter(v => v!=null));
+  const rawMin = Math.min(...allVals, 0), rawMax = Math.max(...allVals, ...SERIES.map(s=>s.bench))*1.12;
+  const range=rawMax-rawMin, roughStep=range/5, mag=Math.pow(10,Math.floor(Math.log10(roughStep)));
+  const step=([1,2,2.5,5,10].find(p=>p*mag>=roughStep)||10)*mag;
+  const yMin=Math.floor(rawMin/step)*step, yMax=Math.ceil(rawMax/step)*step;
+  const yTicks=[]; for(let t=yMin;t<=yMax+1e-9;t=Math.round((t+step)*1000)/1000) yTicks.push(t);
+  const n=clean.length;
+  const xPos=i=>pL+(n>1?(i/(n-1))*plotW:plotW/2);
+  const yPos=v=>pT+plotH*(1-(v-yMin)/(yMax-yMin));
+  const y0=yPos(0);
+
+  let s='';
+  yTicks.forEach(t => {
+    const y=yPos(t).toFixed(1), isZ=Math.abs(t)<1e-9;
+    s+=`<line x1="${pL}" y1="${y}" x2="${W-pR}" y2="${y}" stroke="${isZ?'#d1d5db':'#f0f2f4'}" stroke-width="${isZ?1.5:1}"/>`;
+    s+=`<text x="${pL-6}" y="${(+y+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#b0b7c0" font-family="system-ui,sans-serif">$${Number.isInteger(t)?t:t.toFixed(0)}</text>`;
+  });
+  s+=`<line x1="${pL}" y1="${y0.toFixed(1)}" x2="${W-pR}" y2="${y0.toFixed(1)}" stroke="#e5e7eb" stroke-width="1"/>`;
+  SERIES.forEach(sr => { const y=yPos(sr.bench).toFixed(1); s+=`<line x1="${pL}" y1="${y}" x2="${W-pR}" y2="${y}" stroke="${sr.color}" stroke-width="1" stroke-dasharray="3,4" opacity="0.35"/>`; });
+  SERIES.forEach(sr => {
+    const pts=clean.map((m,i)=>{const v=m.metrics[sr.key];return v!=null?`${xPos(i).toFixed(1)},${yPos(v).toFixed(1)}`:null;}).filter(Boolean);
+    if(pts.length>1) s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${sr.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    clean.forEach((m,i)=>{
+      const v=m.metrics[sr.key]; if(v==null) return;
+      const cx=xPos(i).toFixed(1), cy=yPos(v).toFixed(1), dc=sr.key==='ppu'?(v>=0?'#16a34a':'#dc2626'):sr.color;
+      s+=`<circle cx="${cx}" cy="${cy}" r="5" fill="${dc}" stroke="#fff" stroke-width="1.5" style="cursor:pointer" data-label="${sr.label}" data-period="${m.period}" data-rpu="${m.metrics.rpu??''}" data-ppu="${m.metrics.ppu??''}"/>`;
+    });
+  });
+  const skip=clean.length>8?2:1;
+  clean.forEach((m,i)=>{
+    if(i%skip!==0&&i!==clean.length-1) return;
+    const [mon,yr]=m.period.split(' ');
+    s+=`<text x="${xPos(i).toFixed(1)}" y="${(pT+plotH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="#8a9099" font-family="system-ui,sans-serif">${mon.slice(0,3)+(yr?' \''+yr.slice(-2):'')}</text>`;
+  });
+  SERIES.forEach((sr,i)=>{
+    const lx=pL+i*162;
+    s+=`<circle cx="${lx+5}" cy="15" r="3.5" fill="${sr.color}"/>`;
+    s+=`<text x="${lx+13}" y="19" font-size="10" fill="#6b7280" font-family="system-ui,sans-serif">${sr.label}</text>`;
+    s+=`<text x="${lx+37}" y="19" font-size="10" fill="#b0b7c0" font-family="system-ui,sans-serif">bench $${sr.bench}</text>`;
+  });
+
+  const hdrCells=clean.map(m=>{const[mon,yr]=m.period.split(' ');return `<th style="text-align:right;padding:4px 10px;font-size:10px;font-weight:600;letter-spacing:.05em;color:#9ca3af;border-bottom:1px solid #e5e7eb;border-top:none;background:none;text-transform:uppercase">${mon.slice(0,3)+(yr?' \''+yr.slice(-2):'')}</th>`;}).join('');
+  const bodyRows=SERIES.map(sr=>{
+    const cells=clean.map(m=>{const v=m.metrics[sr.key];if(v==null)return`<td style="text-align:right;padding:3px 10px;color:#9ca3af;border:none;background:none">—</td>`;const good=sr.key==='ppu'?v>=0:v>=sr.bench;const c=sr.key==='ppu'?(v>=0?'#16a34a':'#dc2626'):(good?'#16a34a':'#dc2626');return`<td style="text-align:right;padding:3px 10px;font-weight:600;font-size:12px;color:${c};border:none;background:none">$${v.toFixed(0)}</td>`;}).join('');
+    return`<tr><td style="padding:3px 10px;font-size:11px;font-weight:700;color:${sr.color};border:none;background:none;letter-spacing:.04em">${sr.label}</td>${cells}</tr>`;
+  }).join('');
+
+  container.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block">${s}</svg><table style="border-collapse:collapse;font-family:system-ui,sans-serif;margin-top:2px"><thead><tr><th style="padding:4px 10px;border-bottom:1px solid #e5e7eb;border-top:none;background:none"></th>${hdrCells}</tr></thead><tbody>${bodyRows}</tbody></table>`;
+  const svg=container.querySelector('svg');
+  if(svg){
+    svg.addEventListener('mouseover',e=>{
+      if(e.target.tagName==='circle'&&e.target.dataset.label){
+        const el=e.target, tip=_ensureFinTip();
+        const ALL=[{key:'rpu',label:'RPU',color:'#FF7417',bench:335},{key:'ppu',label:'PPU',color:'#6366F1',bench:50}];
+        const rows=ALL.map(sr=>{const v=parseFloat(el.dataset[sr.key]);if(isNaN(v))return'';const above=v>=sr.bench;const dc=sr.key==='ppu'?(v>=0?'#16a34a':'#dc2626'):sr.color;return`<div style="display:flex;align-items:baseline;gap:8px;margin-top:7px"><span style="font-size:11px;font-weight:700;color:${dc};min-width:32px">${sr.label}</span><span style="font-size:24px;font-weight:700;color:${dc};line-height:1">$${v.toFixed(0)}</span><span style="font-size:11px;color:${above?'#4ade80':'#f87171'}">${above?'▲':'▼'}&thinsp;$${sr.bench}</span></div>`;}).join('');
+        tip.innerHTML=`<div style="font-size:11px;color:#9ca3af;margin-bottom:2px">${el.dataset.period}</div>`+rows;
+        tip.style.display='block'; _posFinTip(e);
+      }
+    });
+    svg.addEventListener('mousemove',_posFinTip);
+    svg.addEventListener('mouseout',e=>{if(e.target.tagName==='circle')_hideFinTip();});
+  }
+}
+
+// ─── Zero Goals ───────────────────────────────────────────
+function renderZeroGoals(d) {
+  function setZero(countId, badgeId, count) {
+    const el = document.getElementById(countId);
+    el.textContent = count;
+    el.closest('.zero-card').className = 'zero-card ' + (count === 0 ? 'clear' : 'danger');
+    document.getElementById(badgeId).textContent = count === 0 ? 'CLEAR' : 'CRITICAL';
+  }
+  setZero('z-delinquent', 'z-del-badge',    d.delinquent_count || 0);
+  setZero('z-open-wo',    'z-open-badge',   d.open_work_orders_count || 0);
+  const overdueCount = d.overdue_work_orders_count || d.speed_of_repair?.overdue_count || 0;
+  setZero('z-overdue-wo', 'z-overdue-badge', overdueCount);
+  const vacCount = d.vacant_units_count || d.vacant_count || (d.vacancy_cost_clock || []).length || 0;
+  document.getElementById('z-vacant').textContent = vacCount;
+  document.getElementById('z-vacant').closest('.zero-card').className = 'zero-card ' + (vacCount === 0 ? 'clear' : 'danger');
+  document.getElementById('z-vacant-badge').textContent = vacCount === 0 ? 'CLEAR' : 'CRITICAL';
+  const totalLoss = (d.vacancy_cost_clock || []).reduce((s, v) => s + (v.total_loss || 0), 0);
+  const lossSub = document.getElementById('z-vacancy-loss');
+  lossSub.textContent = (vacCount > 0 && totalLoss > 0) ? fmt$(totalLoss) + ' total lost' : '';
+  lossSub.className = 'zero-sub' + ((vacCount > 0 && totalLoss > 0) ? ' loss' : '');
+}
+
+function _setBadge(id, count, style) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = count;
+  el.className = 'dch-badge ' + (style || (count === 0 ? 'clear' : 'danger'));
+}
+
+// ─── Compact list renderers ───────────────────────────────
+function renderDelinquency(d) {
+  const rows = d.rent_collected?.delinquent_leases || [];
+  const el = document.getElementById('compact-delinquency');
+  _setBadge('dc-del-badge', rows.length, rows.length === 0 ? 'clear' : 'danger');
+  const seeAll = document.getElementById('dc-del-seeall');
+  if (seeAll) seeAll.textContent = rows.length ? 'See all ' + rows.length + ' →' : 'See all →';
+  if (!rows.length) { el.innerHTML = '<div class="compact-empty">No delinquent leases — all clear ✓</div>'; return; }
+  el.innerHTML = rows.slice(0, 5).map(r => {
+    const dot = r.days_late > 20 ? 'red' : r.days_late > 7 ? 'yellow' : 'gray';
+    return `<div class="compact-item" onclick="openDrillDown('rent_collected','Late Rent')">
+      <div class="ci-dot ${dot}"></div>
+      <div class="ci-body"><div class="ci-name">${esc(r.tenant_name)}</div>
+      <div class="ci-sub">${esc(trunc(r.unit, 50))}${r.days_late > 0 ? ' · ' + r.days_late + 'd late' : ''}</div></div>
+      <div class="ci-val ${r.balance > 0 ? 'text-red' : ''}">${r.balance ? fmt$(r.balance) : '—'}</div>
+      <div class="ci-arrow">›</div></div>`;
+  }).join('');
+}
+
+function renderAtRisk(d) {
+  const rows = d.at_risk_tenants || [];
+  const el = document.getElementById('compact-at-risk');
+  _setBadge('dc-risk-badge', rows.length, rows.length === 0 ? 'clear' : 'warn');
+  if (!rows.length) { el.innerHTML = '<div class="compact-empty">No at-risk residents flagged ✓</div>'; return; }
+  el.innerHTML = rows.slice(0, 5).map(r => {
+    const score = r.score || 0;
+    const dot = score >= 3 ? 'red' : 'yellow';
+    const factors = (r.risk_factors || []).join(' · ') || (r.property || r.unit || '');
+    return `<div class="compact-item" onclick="openDrillDown('at_risk','At-Risk Residents')">
+      <div class="ci-dot ${dot}"></div>
+      <div class="ci-body"><div class="ci-name">${esc(r.tenant_name)}</div>
+      <div class="ci-sub">${esc(trunc(factors, 55))}</div></div>
+      <div class="ci-val ${score >= 3 ? 'text-red' : 'text-yellow'}">Score ${score}</div>
+      <div class="ci-arrow">›</div></div>`;
+  }).join('');
+}
+
+function renderWOTable(showAll) {
+  const rows = showAll ? allWOs : allWOs.slice(0, 5);
+  const el = document.getElementById('compact-wo');
+  const seeAll = document.getElementById('dc-wo-seeall');
+  _setBadge('dc-wo-badge', allWOs.length, allWOs.length === 0 ? 'clear' : 'danger');
+  if (seeAll) seeAll.textContent = allWOs.length ? 'See all ' + allWOs.length + ' →' : 'No open work orders';
+  if (!allWOs.length) { el.innerHTML = '<div class="compact-empty">No open work orders ✓</div>'; return; }
+  el.innerHTML = rows.map(r => {
+    const critical = r.days_open > 14, overdue = r.days_open > 3;
+    const dot = critical ? 'red' : overdue ? 'yellow' : 'green';
+    const vendor = r.vendor ? esc(trunc(r.vendor, 20)) : '<span style="color:#8A9099">Unassigned</span>';
+    return `<div class="compact-item" onclick="openDrillDown('work_orders','Open Work Orders')">
+      <div class="ci-dot ${dot}"></div>
+      <div class="ci-body"><div class="ci-name">${esc(trunc(r.description, 55))}</div>
+      <div class="ci-sub">${esc(trunc(r.property_name, 35))} · ${vendor}</div></div>
+      <div class="ci-val ${critical ? 'text-red' : overdue ? 'text-yellow' : ''}">${r.days_open}d</div>
+      <div class="ci-arrow">›</div></div>`;
+  }).join('');
+}
+
+function renderAlerts(data) {
+  const alerts = (data.alerts || []).slice().sort((a, b) =>
+    a.severity === 'CRITICAL' && b.severity !== 'CRITICAL' ? -1 : 1);
+  const badge = document.getElementById('alert-count-badge');
+  badge.textContent = alerts.length;
+  const hasCritical = alerts.some(a => a.severity === 'CRITICAL');
+  badge.style.background  = hasCritical ? 'var(--red-bg)'  : 'var(--amber-bg)';
+  badge.style.color       = hasCritical ? 'var(--red)'     : 'var(--amber)';
+  badge.style.borderColor = hasCritical ? 'rgba(239,68,68,.3)' : 'rgba(245,158,11,.3)';
+  const list = document.getElementById('alerts-list');
+  if (!alerts.length) { list.innerHTML = '<div class="empty-state text-green" style="padding:20px">No active alerts — all clear</div>'; return; }
+  list.innerHTML = alerts.map(a => `
+    <div class="alert-item" id="alert-${a.id}">
+      <div class="alert-dot ${esc(a.severity)}"></div>
+      <div class="alert-msg">
+        <div class="alert-sev ${esc(a.severity)}">${esc(a.severity)}</div>
+        <div>${esc(a.message)}</div>
+        <div class="alert-time">${fmtTs(a.fired_at)}</div>
+      </div>
+      <button class="alert-clear" onclick="clearAlert(${a.id})">&#x2715;</button>
+    </div>`).join('');
+}
+
+function renderVacancyClock(d) {
+  const units = d.vacancy_cost_clock || [];
+  const el = document.getElementById('vacancy-clock-grid');
+  _setBadge('dc-vac-badge', units.length, units.length === 0 ? 'clear' : 'danger');
+  if (!units.length) { el.innerHTML = '<div class="compact-empty">No vacant units — full occupancy ✓</div>'; return; }
+  el.innerHTML = units.map(u => {
+    const critical = u.days_vacant > 30;
+    const dot = critical ? 'red' : u.days_vacant > 14 ? 'yellow' : 'green';
+    const parts = [u.unit_label, u.property_name].filter(Boolean);
+    const lossStr = u.total_loss > 0 ? fmt$(u.total_loss) + ' lost' : '';
+    return `<div class="compact-item" onclick="openDrillDown('vacant_units','Vacant Units — Revenue Lost')">
+      <div class="ci-dot ${dot}"></div>
+      <div class="ci-body"><div class="ci-name">${esc(parts.join(' — '))}</div>
+      <div class="ci-sub">${esc([u.days_vacant + ' days vacant', lossStr].filter(Boolean).join(' · '))}</div></div>
+      <div class="ci-val ${critical ? 'text-red' : 'text-yellow'}">${u.daily_cost > 0 ? fmt$(u.daily_cost) + '/day' : '—'}</div>
+      <div class="ci-arrow">›</div></div>`;
+  }).join('');
+}
+
+async function clearAlert(id) {
+  try { await fetch('/api/alerts/' + id + '/clear', { method: 'POST' }); } catch (_) {}
+  const el = document.getElementById('alert-' + id);
+  if (el) { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 350); }
+  const badge = document.getElementById('alert-count-badge');
+  const n = parseInt(badge.textContent, 10);
+  if (!isNaN(n) && n > 0) badge.textContent = n - 1;
+}
+
+function toggleAlerts() {
+  alertsOpen = !alertsOpen;
+  document.getElementById('alerts-list').classList.toggle('open', alertsOpen);
+  document.getElementById('alerts-chevron').classList.toggle('open', alertsOpen);
+}
+
+// ─── Drill-down drawer ────────────────────────────────────
+let _drawerStack = [];
+
+function openDrillDown(section, title, localData) {
+  const isOpen = document.getElementById('drill-drawer').classList.contains('open');
+  if (isOpen) {
+    _drawerStack.push({ title: document.getElementById('drawer-title').textContent, html: document.getElementById('drawer-body').innerHTML });
+  } else {
+    _drawerStack = [];
+  }
+  document.getElementById('drawer-back').style.display = _drawerStack.length ? 'inline-flex' : 'none';
+  document.getElementById('drawer-title').textContent = title;
+  document.getElementById('drawer-body').innerHTML = '<div class="drawer-loading">Loading&hellip;</div>';
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('drill-drawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (localData) { renderDrawer(section, localData); return; }
+  fetch('/api/drill/' + section)
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(data => renderDrawer(section, data))
+    .catch(err => { document.getElementById('drawer-body').innerHTML = '<div class="drawer-loading" style="color:var(--red)">Failed to load — ' + err + '</div>'; });
+}
+
+function drawerGoBack() {
+  if (!_drawerStack.length) return;
+  const prev = _drawerStack.pop();
+  document.getElementById('drawer-title').textContent = prev.title;
+  document.getElementById('drawer-body').innerHTML = prev.html;
+  document.getElementById('drawer-back').style.display = _drawerStack.length ? 'inline-flex' : 'none';
+}
+
+function closeDrillDown() {
+  _drawerStack = [];
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('drill-drawer').classList.remove('open');
+  document.getElementById('drawer-back').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrillDown(); });
+
+function dstat(val, label, valColor, accentColor) {
+  const vc = valColor    ? ' c-'      + valColor    : '';
+  const ac = accentColor ? ' accent-' + accentColor : '';
+  return `<div class="dstat${ac}"><div class="dstat-val${vc}">${val}</div><div class="dstat-label">${label}</div></div>`;
+}
+function dstats() { return `<div class="drawer-stats">${Array.from(arguments).join('')}</div>`; }
+
+function renderDrawer(section, data) {
+  const body = document.getElementById('drawer-body');
+
+  if (section === 'delinquency' || section === 'rent_collected') {
+    const rows = data.records || data.delinquent_leases || [];
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No delinquent leases — all clear ✓</div>'; return; }
+    const totalBal = rows.reduce((s, r) => s + (r.balance || 0), 0);
+    const totalRent = rows.reduce((s, r) => s + (r.rent_due || 0), 0);
+    const totalFees = rows.reduce((s, r) => s + (r.fees_due || 0), 0);
+    const pct = data.pct, col = data.collected_usd, exp = data.expected_usd;
+    const outstanding = data.outstanding_usd != null ? data.outstanding_usd : totalBal;
+    const pctColor = pct == null ? '' : pct >= 95 ? 'green' : pct >= 90 ? 'yellow' : 'red';
+    body.innerHTML = dstats(
+      dstat(pct != null ? fmtPct(pct) : '—', 'Collection Rate', pctColor, pctColor),
+      exp != null ? dstat(fmt$(exp), 'Total Expected This Month', '', '') : '',
+      col != null ? dstat(fmt$(col), 'Total Collected', col >= exp * 0.95 ? 'green' : 'yellow', '') : '',
+      dstat(fmt$(outstanding), 'Total Outstanding', 'red', 'red'),
+      dstat(rows.length, rows.length === 1 ? 'Lease Past Due' : 'Leases Past Due', 'red', 'red')
+    ) + `<div class="table-wrap"><table>
+      <thead><tr><th>Resident</th><th>Unit</th><th>Days Late</th><th>Rent Due</th><th>Fees Due</th><th>Balance</th></tr></thead>
+      <tbody>${rows.map(r => `<tr>
+        <td>${esc(r.tenant_name)}</td>
+        <td class="text-muted font-mono">${esc(trunc(r.unit||'',35))}</td>
+        <td class="${r.days_late > 14 ? 'text-red' : r.days_late > 7 ? 'text-yellow' : ''} font-mono">${r.days_late > 0 ? r.days_late + ' days' : '—'}</td>
+        <td class="font-mono">${r.rent_due ? fmt$(r.rent_due) : '—'}</td>
+        <td class="font-mono">${r.fees_due ? fmt$(r.fees_due) : '—'}</td>
+        <td class="font-mono ${r.balance > 0 ? 'text-red' : ''}">${r.balance ? fmt$(r.balance) : '—'}</td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr style="border-top:2px solid var(--border);font-weight:700">
+        <td colspan="2" style="color:var(--muted)">${rows.length} lease${rows.length !== 1 ? 's' : ''}</td>
+        <td></td><td class="font-mono">${fmt$(totalRent)}</td>
+        <td class="font-mono">${fmt$(totalFees)}</td>
+        <td class="font-mono text-red">${fmt$(totalBal)}</td>
+      </tr></tfoot></table></div>`;
+    return;
+  }
+
+  if (section === 'work_orders' || section === 'overdue_work_orders') {
+    const rows = data.records || [];
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No work orders — all clear ✓</div>'; return; }
+    const overdueCt  = rows.filter(r => r.days_open > 3).length;
+    const criticalCt = rows.filter(r => r.days_open > 14).length;
+    const unassigned = rows.filter(r => !r.vendor || r.vendor === 'Unassigned').length;
+    const avgAge = rows.length ? Math.round(rows.reduce((s,r) => s + (r.days_open||0), 0) / rows.length) : null;
+    const ageColor = avgAge == null ? '' : avgAge <= 3 ? 'green' : avgAge <= 10 ? 'yellow' : 'red';
+    body.innerHTML = dstats(
+      dstat(avgAge != null ? avgAge + ' days' : '—', 'Avg Age Open', ageColor, ageColor),
+      dstat(data.open_count ?? rows.length, 'Open Work Orders', '', ''),
+      dstat(data.overdue_count ?? overdueCt, 'Overdue >3 Days', overdueCt > 0 ? 'yellow' : '', overdueCt > 0 ? 'yellow' : ''),
+      criticalCt ? dstat(criticalCt, 'Critical >14 Days', 'red', 'red') : '',
+      unassigned  ? dstat(unassigned,  'Unassigned',        'red', 'red') : ''
+    ) + `<div class="table-wrap"><table>
+      <thead><tr><th>WO #</th><th>Description</th><th>Property</th><th>Priority</th><th>Vendor</th></tr></thead>
+      <tbody>${rows.map(r => {
+        const critical = r.days_open > 14, overdue = r.days_open > 3;
+        const priLabel = r.priority || (critical ? 'High' : overdue ? 'Medium' : 'Low');
+        return `<tr class="${critical ? 'tr-critical' : overdue ? 'tr-overdue' : ''}">
+          <td class="font-mono text-muted">#${esc(r.wo_id)}</td>
+          <td style="max-width:200px">${esc(trunc(r.description,55))}</td>
+          <td class="text-muted">${esc(trunc(r.property_name||'',30))}</td>
+          <td><span class="badge ${critical ? 'badge-red' : overdue ? 'badge-yellow' : 'badge-gray'}">${esc(priLabel)}</span></td>
+          <td>${r.vendor && r.vendor !== 'Unassigned' ? `<span class="badge badge-blue">${esc(trunc(r.vendor,20))}</span>` : '<span class="badge badge-gray">Unassigned</span>'}</td>
+        </tr>`;
+      }).join('')}</tbody>
+      <tfoot><tr style="border-top:2px solid var(--border);font-weight:700">
+        <td colspan="3" style="color:var(--muted)">${rows.length} shown · <span class="text-red">${criticalCt} critical</span> · <span class="text-yellow">${overdueCt} overdue</span>${unassigned ? ` · <span class="text-red">${unassigned} unassigned</span>` : ''}</td>
+        <td colspan="2"></td>
+      </tr></tfoot></table></div>`;
+    return;
+  }
+
+  if (section === 'vacant_units') {
+    const rows = data.records || [];
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No vacant units — full occupancy ✓</div>'; return; }
+    const totalLoss = rows.reduce((s, u) => s + (u.total_loss || 0), 0);
+    const maxDays = rows.length ? Math.max(...rows.map(u => u.days_vacant||0)) : 0;
+    const avgDays = rows.length ? Math.round(rows.reduce((s,u) => s + (u.days_vacant||0), 0) / rows.length) : 0;
+    const maxColor = maxDays > 30 ? 'red' : maxDays > 14 ? 'yellow' : '';
+    body.innerHTML = dstats(
+      dstat(rows.length, 'Units Vacant', 'red', 'red'),
+      dstat(avgDays + ' days', 'Avg Days on Market', maxColor, maxColor),
+      dstat(maxDays + ' days', 'Longest on Market', maxColor, maxColor),
+      dstat(fmt$(totalLoss), 'Total Revenue Lost', 'red', 'red')
+    ) + `<div class="table-wrap"><table>
+      <thead><tr><th>Address</th><th>Days Vacant</th><th>Daily Cost</th><th>Total Lost</th></tr></thead>
+      <tbody>${rows.map(u => `<tr>
+        <td class="font-mono">${esc(u.property_name||u.unit_label||'')}</td>
+        <td class="font-mono text-yellow">${u.days_vacant} days</td>
+        <td class="font-mono">${fmt$(u.daily_cost)}/day</td>
+        <td class="font-mono text-red">${fmt$(u.total_loss)}</td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr style="border-top:2px solid var(--border);font-weight:700">
+        <td colspan="2" style="color:var(--muted)">${rows.length} vacant · ${avgDays} days avg</td>
+        <td></td><td class="font-mono text-red">${fmt$(totalLoss)}</td>
+      </tr></tfoot></table></div>`;
+    return;
+  }
+
+  if (section === 'at_risk') {
+    const rows = data.records || [];
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No at-risk residents flagged ✓</div>'; return; }
+    const highRisk = rows.filter(r => (r.score||0) >= 3).length;
+    body.innerHTML = dstats(
+      dstat(rows.length, 'At-Risk Residents', rows.length > 0 ? 'yellow' : '', rows.length > 0 ? 'yellow' : ''),
+      dstat(highRisk, 'High Risk (Score 3+)', highRisk > 0 ? 'red' : '', highRisk > 0 ? 'red' : '')
+    ) + `<div class="table-wrap"><table>
+      <thead><tr><th>Resident</th><th>Unit</th><th>Risk Score</th><th>Factors</th></tr></thead>
+      <tbody>${rows.map(r => `<tr>
+        <td>${esc(r.tenant_name||'—')}</td>
+        <td class="font-mono text-muted">${esc(r.unit||r.property||'')}</td>
+        <td class="font-mono ${(r.score||0) >= 3 ? 'text-red' : 'text-yellow'}">${r.score || 0}</td>
+        <td class="text-muted">${esc((r.risk_factors||[]).join(', '))}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+    return;
+  }
+
+  body.innerHTML = '<div class="drawer-empty">No data available for this section.</div>';
+}
+
+// ─── Load Everything ─────────────────────────────────────
+async function loadAll(manual) {
+  const btn = document.getElementById('btn-refresh');
+  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
+  try {
+    const kpisRes = await fetch('/api/kpis?_=' + Date.now());
+    if (kpisRes.status === 401) { window.location.href = '/auth/login'; return; }
+    if (!kpisRes.ok) throw new Error('KPI ' + kpisRes.status);
+
+    const [kpis, briefingRes, churnRes, finRes, histRes, alertsRes] = await Promise.all([
+      kpisRes.json(),
+      fetch('/api/briefing?role=operations'),
+      fetch('/api/churn'),
+      fetch('/api/financials'),
+      fetch('/api/financials/history'),
+      fetch('/api/alerts'),
+    ]);
+
+    lastKpis = kpis;
+    const ts = kpis._synced_at || kpis.refreshed_at;
+    document.getElementById('sync-ts').textContent = 'Synced: ' + fmtTs(ts);
+    document.getElementById('offline-banner').style.display = 'none';
+
+    renderKPIs(kpis);
+    renderZeroGoals(kpis);
+    renderDelinquency(kpis);
+    renderAtRisk(kpis);
+
+    allWOs = (kpis.speed_of_repair?.open_work_orders || []).slice().sort((a, b) => b.days_open - a.days_open);
+    renderWOTable(woShowAll);
+    renderVacancyClock(kpis);
+
+    if (briefingRes.ok) renderBriefing(await briefingRes.json());
+    if (churnRes.ok)    renderChurn(await churnRes.json());
+    if (finRes.ok)      renderFinKPIs(await finRes.json());
+    if (histRes.ok) {
+      const h = await histRes.json();
+      renderFinChart(h.months || []);
+      renderProfitChart(h.months || []);
+    }
+
+    const alertsData = alertsRes.ok ? await alertsRes.json() : {alerts:[], count:0};
+    renderAlerts(alertsData);
+    if (alertsData.alerts?.some(a => a.severity === 'CRITICAL')) {
+      alertsOpen = true;
+      document.getElementById('alerts-list').classList.add('open');
+      document.getElementById('alerts-chevron').classList.add('open');
+    }
+
+    // Show user name
+    const meRes = await fetch('/auth/me');
+    if (meRes.ok) {
+      const me = await meRes.json();
+      const initials = (me.display_name || me.email || '?').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      document.getElementById('user-initials').textContent = initials;
+    }
+  } catch(e) {
+    document.getElementById('offline-banner').style.display = '';
+    document.getElementById('offline-ts').textContent = fmtTs(new Date().toISOString());
+  } finally {
+    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+  }
+}
+
+loadAll();
+setInterval(() => loadAll(false), 5 * 60 * 1000);
+</script>
+</body>
+</html>

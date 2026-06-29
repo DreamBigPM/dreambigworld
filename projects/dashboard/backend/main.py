@@ -19,7 +19,7 @@ _DASHBOARD_DIR = Path(__file__).parent.parent
 load_dotenv(_DASHBOARD_DIR / ".env")
 
 from fastapi import FastAPI, Depends, Request, HTTPException, UploadFile, File
-from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
+from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -59,6 +59,10 @@ async def lifespan(app: FastAPI):
     # Initialize database
     database.init_db()
     logger.info("SQLite database initialized")
+
+    # Seed known team members with correct roles
+    database.seed_team_users()
+    logger.info("Team users seeded")
 
     # Schedule daily KPI pull at 6:00am
     scheduler.add_job(
@@ -366,6 +370,9 @@ def _filter_kpis_by_role(kpis: dict, user: dict) -> dict:
         return {
             "inspection_compliance": kpis.get("inspection_compliance", []),
             "speed_of_repair": {
+                "open_count": sor.get("open_count", 0),
+                "overdue_count": sor.get("overdue_count", 0),
+                "avg_days_to_close": sor.get("avg_days_to_close"),
                 "open_work_orders": sor.get("open_work_orders", []),
                 "overdue_work_orders": sor.get("overdue_work_orders", []),
             },
@@ -423,8 +430,18 @@ async def auth_callback(request: Request, code: str = None, error: str = None):
         "display_name": user.get("display_name") or user["email"],
     }
 
+    role_urls = {
+        "admin":                    "/",
+        "operations":               "/operations",
+        "leasing_agent":            "/leasing",
+        "field_services":           "/field",
+        "property_manager":         "/pm",
+        "maintenance_coordinator":  "/maintenance",
+    }
+    redirect_url = role_urls.get(user["role"], "/")
+
     cookie_value = auth.create_session_cookie(session_data)
-    response = RedirectResponse("/")
+    response = RedirectResponse(redirect_url)
     response.set_cookie(
         key=auth.COOKIE_NAME,
         value=cookie_value,
@@ -478,6 +495,7 @@ async def api_kpis(user: dict = Depends(auth.get_current_user)):
 @app.post("/api/refresh")
 async def api_refresh(user: dict = Depends(auth.get_current_user)):
     global _kpi_cache, _kpi_cache_time
+    _invalidate_churn_cache()
     data = await supabase_kpi.fetch_kpis(database_module=database)
     if data:
         _kpi_cache = data
@@ -489,11 +507,18 @@ async def api_refresh(user: dict = Depends(auth.get_current_user)):
 
 
 @app.get("/api/briefing")
-async def api_briefing(user: dict = Depends(auth.get_current_user)):
+async def api_briefing(request: Request, user: dict = Depends(auth.get_current_user)):
     role = user.get("role", "admin")
+    # Allow ?role= override when SKIP_AUTH is on (local dev only)
+    if os.getenv("SKIP_AUTH", "false").lower() == "true":
+        override = request.query_params.get("role")
+        if override:
+            role = override
+    from datetime import date as _date
     kpis = await _get_kpis_cached()
     text = await briefing.get_or_generate_briefing(role=role, kpi_data=kpis)
-    return JSONResponse({"role": role, "text": text})
+    principle = briefing._get_daily_principle(_date.today())
+    return JSONResponse({"role": role, "text": text, "principle": principle})
 
 
 @app.get("/api/alerts")
@@ -1153,6 +1178,20 @@ async def api_sync_supabase(
 # ── Static frontend (must be last so /api/* routes take priority) ─────────────
 
 _FRONTEND_DIR = _DASHBOARD_DIR / "frontend"
+
+# Explicit routes for role dashboards (Starlette html=True doesn't strip .html from paths)
+@app.get("/operations")
+async def operations_page():
+    return FileResponse(_FRONTEND_DIR / "operations.html")
+
+@app.get("/leasing")
+async def leasing_page():
+    return FileResponse(_FRONTEND_DIR / "leasing.html")
+
+@app.get("/field")
+async def field_page():
+    return FileResponse(_FRONTEND_DIR / "field.html")
+
 if _FRONTEND_DIR.exists():
     app.mount("/", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="frontend")
 else:

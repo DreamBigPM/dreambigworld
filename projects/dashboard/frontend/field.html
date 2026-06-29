@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Big PM — Field Services</title>
+<link rel="stylesheet" href="css/dashboard.css">
+<style>
+  .role-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #16a34a;
+    background: rgba(22,163,74,.10);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(22,163,74,.25);
+  }
+  .signout-btn {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: color .15s, border-color .15s;
+  }
+  .signout-btn:hover { color: var(--text); border-color: var(--muted); }
+
+  /* Inspection table */
+  .insp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .insp-table th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+    padding: 6px 10px 8px;
+  }
+  .insp-table td { padding: 8px 10px; border-bottom: 1px solid #F0F2F5; vertical-align: middle; }
+  .insp-table tr:last-child td { border-bottom: none; }
+  .insp-table tr:hover td { background: #F8F9FA; }
+  .insp-status {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 12px;
+  }
+  .insp-status.overdue  { color: #DC2626; background: rgba(220,38,38,.08); }
+  .insp-status.due-soon { color: #D97706; background: rgba(217,119,6,.08); }
+  .insp-status.current  { color: #16a34a; background: rgba(22,163,74,.08); }
+  .insp-summary {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .insp-pill {
+    font-size: 12px; font-weight: 600;
+    padding: 4px 12px; border-radius: 20px;
+  }
+  .insp-pill.red    { color: #DC2626; background: rgba(220,38,38,.08); }
+  .insp-pill.yellow { color: #D97706; background: rgba(217,119,6,.08); }
+  .insp-pill.green  { color: #16a34a; background: rgba(22,163,74,.08); }
+  .insp-container { overflow-x: auto; }
+  .insp-empty { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
+
+  /* WO priority dots */
+  .wo-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; margin-top: 3px; }
+  .wo-dot.high   { background: #DC2626; }
+  .wo-dot.medium { background: #D97706; }
+  .wo-dot.low    { background: #8A9099; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <img id="header-logo" src="/logo.png" alt="Dream Big PM" style="height:36px;object-fit:contain">
+  <div class="header-right">
+    <div id="sync-ts" style="font-size:12px;color:var(--muted)">Loading&hellip;</div>
+    <span class="role-badge">Field Services</span>
+    <div class="header-avatar" id="user-initials">—</div>
+    <form method="post" action="/auth/logout" style="margin:0">
+      <button type="submit" class="signout-btn">Sign Out</button>
+    </form>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- OFFLINE BANNER -->
+  <div id="offline-banner" style="display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 16px;margin-bottom:12px;font-size:13px;color:#92400e">
+    Dashboard offline &mdash; last data from <span id="offline-ts">unknown</span>
+  </div>
+
+  <!-- BRIEFING -->
+  <div class="section-label">AI Morning Briefing</div>
+  <div class="card briefing-card">
+    <div class="briefing-header" onclick="toggleBriefing()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 18px">
+      <div class="briefing-title">&#9733; Daily Briefing</div>
+      <span class="chevron open" id="briefing-chevron">&#9660;</span>
+    </div>
+    <div id="briefing-body" class="open" style="padding:0 18px 14px">
+      <div id="briefing-text" class="text-muted">Loading&hellip;</div>
+    </div>
+  </div>
+
+  <!-- FIELD KPIs -->
+  <div class="section-label">Field KPIs</div>
+  <div id="kpi-grid">
+    <div class="kpi-card gray" id="kc-open-wo"><div class="kpi-name">Open Work Orders</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-overdue-wo"><div class="kpi-name">Overdue Work Orders</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-sor"><div class="kpi-name">Speed of Repair</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-insp-overdue"><div class="kpi-name">Inspections Overdue</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-insp-due-soon"><div class="kpi-name">Inspections Due Soon</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-insp-current"><div class="kpi-name">Inspections Current</div><div class="kpi-value">—</div></div>
+  </div>
+
+  <!-- DAILY ZERO GOALS -->
+  <div class="section-label" style="margin-top:20px">Daily Zero Goals</div>
+  <div id="zero-grid">
+    <div class="zero-card danger" onclick="openDrillDown('work_orders','Open Work Orders')">
+      <div class="zero-chevron">&#8250;</div>
+      <div class="zero-name">Open Work Orders</div>
+      <div class="zero-count" id="z-open-wo">&#8212;</div>
+      <div class="zero-badge" id="z-open-badge">&#8212;</div>
+    </div>
+    <div class="zero-card danger" onclick="openDrillDown('overdue_work_orders','Overdue Work Orders')">
+      <div class="zero-chevron">&#8250;</div>
+      <div class="zero-name">Overdue Work Orders</div>
+      <div class="zero-count" id="z-overdue-wo">&#8212;</div>
+      <div class="zero-badge" id="z-overdue-badge">&#8212;</div>
+    </div>
+  </div>
+
+  <!-- FIELD DETAIL -->
+  <div class="section-label" style="margin-top:20px">Field Detail</div>
+  <div class="detail-card-grid">
+
+    <!-- Open Work Orders card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="openDrillDown('work_orders','Open Work Orders')">
+        <span class="dch-title">Open Work Orders</span>
+        <span class="dch-badge danger" id="dc-open-badge">—</span>
+        <span class="dch-arrow">›</span>
+      </div>
+      <div class="dc-body">
+        <div id="compact-open-wos" class="compact-list">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+      <div class="dc-footer"><span class="dc-see-all" onclick="openDrillDown('work_orders','Open Work Orders')">See all →</span></div>
+    </div>
+
+    <!-- Overdue Work Orders card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="openDrillDown('overdue_work_orders','Overdue Work Orders')">
+        <span class="dch-title">Overdue Work Orders</span>
+        <span class="dch-badge danger" id="dc-overdue-badge">—</span>
+        <span class="dch-arrow">›</span>
+      </div>
+      <div class="dc-body">
+        <div id="compact-overdue-wos" class="compact-list">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+      <div class="dc-footer"><span class="dc-see-all" onclick="openDrillDown('overdue_work_orders','Overdue Work Orders')">See all →</span></div>
+    </div>
+
+  </div>
+
+  <!-- INSPECTION SCHEDULE -->
+  <div class="section-label" style="margin-top:20px">Inspection Schedule</div>
+  <div class="card" style="padding: 18px 20px">
+    <div id="insp-summary-pills" class="insp-summary"></div>
+    <div class="insp-container">
+      <table class="insp-table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Status</th>
+            <th>Last Inspection</th>
+            <th>Days Since</th>
+          </tr>
+        </thead>
+        <tbody id="insp-tbody">
+          <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- end .main -->
+
+<!-- DRILL-DOWN DRAWER -->
+<div id="drawer-overlay" onclick="closeDrillDown()"></div>
+<div id="drill-drawer">
+  <div id="drawer-header">
+    <button id="drawer-back" onclick="drawerGoBack()" style="display:none">&#8592; Back</button>
+    <div id="drawer-title">Detail</div>
+    <button id="drawer-close" onclick="closeDrillDown()">&#x2715;</button>
+  </div>
+  <div id="drawer-body"><div class="drawer-loading">Loading…</div></div>
+</div>
+
+<script>
+/* ── helpers ── */
+const trunc = (s, n=38) => s && s.length > n ? s.slice(0,n)+'…' : (s||'');
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmtDate = s => { if (!s || s==='Never') return 'Never'; try { return new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); } catch { return s; }};
+
+let lastKpis = null;
+let allOpenWOs = [];
+let allOverdueWOs = [];
+let allInspections = [];
+
+/* ── KPI color ── */
+const kpiColor = (k, v) => {
+  if (v == null || v === undefined) return 'gray';
+  if (k === 'open_work_orders' || k === 'overdue_work_orders') return v === 0 ? 'green' : (v > 10 ? 'red' : 'yellow');
+  if (k === 'avg_days_to_close') return v <= 5 ? 'green' : (v <= 14 ? 'yellow' : 'red');
+  if (k === 'insp_overdue') return v === 0 ? 'green' : (v > 5 ? 'red' : 'yellow');
+  if (k === 'insp_due_soon') return v === 0 ? 'green' : (v > 10 ? 'yellow' : 'yellow');
+  if (k === 'insp_current') return v > 0 ? 'green' : 'gray';
+  return 'gray';
+};
+const statusLabel = { green: 'On Target', yellow: 'Needs Attention', red: 'Below Target', gray: 'No Target Set' };
+
+function renderKPICard(id, label, key, val, display, unit, sub) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  const color = kpiColor(key, val);
+  card.className = 'kpi-card ' + color;
+  const valHtml = (display ?? '—') + (unit ? `<span class="kpi-unit"> ${unit}</span>` : '');
+  card.innerHTML =
+    `<div class="kpi-name">${label}</div>` +
+    `<div class="kpi-value">${valHtml}</div>` +
+    (sub ? `<div class="kpi-sub">${sub}</div>` : '') +
+    `<div class="kpi-status">${statusLabel[color]}</div>`;
+}
+
+/* ── Zero Goals ── */
+function renderZeroGoals(kpis) {
+  const sor = kpis.speed_of_repair || {};
+  const open = sor.open_count ?? 0;
+  const overdue = sor.overdue_count ?? 0;
+
+  const setZero = (countId, badgeId, val, label) => {
+    const cel = document.getElementById(countId);
+    const bel = document.getElementById(badgeId);
+    const card = cel && cel.closest('.zero-card');
+    if (cel) cel.textContent = val;
+    if (card) { card.className = 'zero-card ' + (val === 0 ? 'clear' : 'danger'); }
+    if (bel) { bel.textContent = val === 0 ? 'CLEAR' : 'CRITICAL'; }
+  };
+
+  setZero('z-open-wo',   'z-open-badge',   open,   'open');
+  setZero('z-overdue-wo','z-overdue-badge', overdue,'overdue');
+}
+
+/* ── Work Order compact list ── */
+function renderWOList(containerId, badgeId, wos, max=5) {
+  const el = document.getElementById(containerId);
+  const badge = document.getElementById(badgeId);
+  if (badge) badge.textContent = wos.length;
+  if (!el) return;
+  if (!wos.length) {
+    el.innerHTML = '<div class="compact-empty" style="color:#16a34a;font-size:12px;padding:14px">All clear</div>';
+    return;
+  }
+  const rows = wos.slice(0, max).map(wo => {
+    const pri = (wo.priority||'').toLowerCase();
+    const dotCls = pri === 'high' ? 'high' : pri === 'medium' ? 'medium' : 'low';
+    return `<div class="compact-item" style="cursor:pointer" onclick="openWODetail(${JSON.stringify(wo.wo_id)})">
+      <div class="ci-dot" style="background:${dotCls==='high'?'#DC2626':dotCls==='medium'?'#D97706':'#8A9099'}"></div>
+      <div class="ci-body">
+        <div class="ci-name">${esc(trunc(wo.description,45))}</div>
+        <div class="ci-sub">${esc(wo.property_name)} &middot; ${wo.vendor||'Unassigned'}</div>
+      </div>
+      <div class="ci-value" style="color:${wo.days_open>=10?'#DC2626':'var(--text)'}">${wo.days_open}d</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = rows;
+}
+
+function openWODetail(woId) {
+  /* push a simple detail view */
+  openDrillDown('work_orders', 'Open Work Orders');
+}
+
+/* ── Inspection schedule ── */
+function renderInspections(list) {
+  allInspections = list || [];
+  const tbody = document.getElementById('insp-tbody');
+  const pillsEl = document.getElementById('insp-summary-pills');
+
+  const overdue  = allInspections.filter(r => r.status === 'Overdue');
+  const dueSoon  = allInspections.filter(r => r.status === 'Due Soon');
+  const current  = allInspections.filter(r => r.status === 'Current');
+
+  // Update KPI cards
+  renderKPICard('kc-insp-overdue',  'Inspections Overdue',  'insp_overdue',  overdue.length,  overdue.length,  null, null);
+  renderKPICard('kc-insp-due-soon', 'Inspections Due Soon', 'insp_due_soon', dueSoon.length,  dueSoon.length,  null, null);
+  renderKPICard('kc-insp-current',  'Inspections Current',  'insp_current',  current.length,  current.length,  null, null);
+
+  if (pillsEl) {
+    pillsEl.innerHTML =
+      (overdue.length  ? `<span class="insp-pill red">${overdue.length} Overdue</span>`   : '') +
+      (dueSoon.length  ? `<span class="insp-pill yellow">${dueSoon.length} Due Soon</span>` : '') +
+      (current.length  ? `<span class="insp-pill green">${current.length} Current</span>`   : '');
+  }
+
+  if (!tbody) return;
+  if (!allInspections.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="insp-empty">No inspection data available</td></tr>';
+    return;
+  }
+
+  /* Sort: Overdue → Due Soon → Current */
+  const sortOrder = { Overdue: 0, 'Due Soon': 1, Current: 2 };
+  const sorted = [...allInspections].sort((a,b) => {
+    const sd = sortOrder[a.status] - sortOrder[b.status];
+    if (sd !== 0) return sd;
+    return (b.days_since || 9999) - (a.days_since || 9999);
+  });
+
+  tbody.innerHTML = sorted.map(r => {
+    const statusCls = r.status === 'Overdue' ? 'overdue' : r.status === 'Due Soon' ? 'due-soon' : 'current';
+    const days = r.days_since != null ? r.days_since + 'd ago' : 'Never';
+    return `<tr>
+      <td>${esc(r.property_name)}</td>
+      <td><span class="insp-status ${statusCls}">${esc(r.status)}</span></td>
+      <td>${fmtDate(r.last_inspection_date)}</td>
+      <td style="color:${r.status==='Overdue'?'#DC2626':r.status==='Due Soon'?'#D97706':'var(--muted)'}">${days}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Drawer system ── */
+let _drawerStack = [];
+
+function openDrillDown(section, title) {
+  _drawerStack.push({ section, title });
+  _renderDrawer(section, title);
+}
+
+function drawerGoBack() {
+  _drawerStack.pop();
+  if (_drawerStack.length) {
+    const prev = _drawerStack[_drawerStack.length - 1];
+    _renderDrawer(prev.section, prev.title);
+  } else {
+    closeDrillDown();
+  }
+}
+
+function closeDrillDown() {
+  _drawerStack = [];
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('drill-drawer').classList.remove('open');
+}
+
+function _renderDrawer(section, title) {
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('drill-drawer').classList.add('open');
+  document.getElementById('drawer-title').textContent = title;
+  document.getElementById('drawer-back').style.display = _drawerStack.length > 1 ? '' : 'none';
+  const body = document.getElementById('drawer-body');
+  body.innerHTML = '<div class="drawer-loading">Loading…</div>';
+
+  if (!lastKpis) return;
+  const sor = lastKpis.speed_of_repair || {};
+
+  if (section === 'work_orders') {
+    const wos = (sor.open_work_orders || []).slice().sort((a,b) => b.days_open - a.days_open);
+    renderDrawerWOList(body, wos, 'open');
+    return;
+  }
+
+  if (section === 'overdue_work_orders') {
+    const wos = (sor.overdue_work_orders || []).slice().sort((a,b) => b.days_open - a.days_open);
+    renderDrawerWOList(body, wos, 'overdue');
+    return;
+  }
+
+  if (section === 'inspections') {
+    renderDrawerInspections(body, allInspections);
+    return;
+  }
+
+  body.innerHTML = '<div class="drawer-loading">No data for this section.</div>';
+}
+
+function renderDrawerWOList(body, wos, type) {
+  if (!wos.length) {
+    body.innerHTML = '<div class="drawer-empty">&#10003; All clear</div>';
+    return;
+  }
+  const high   = wos.filter(w => (w.priority||'').toLowerCase() === 'high').length;
+  const medium = wos.filter(w => (w.priority||'').toLowerCase() === 'medium').length;
+  const unassigned = wos.filter(w => !w.vendor || w.vendor === 'Unassigned').length;
+
+  let html = `<div class="drawer-stats">
+    <div class="dstat accent-red"><div class="dstat-val">${wos.length}</div><div class="dstat-lbl">Total</div></div>
+    <div class="dstat accent-red"><div class="dstat-val">${high}</div><div class="dstat-lbl">High Priority</div></div>
+    <div class="dstat accent-yellow"><div class="dstat-val">${medium}</div><div class="dstat-lbl">Medium</div></div>
+    <div class="dstat accent-red"><div class="dstat-val">${unassigned}</div><div class="dstat-lbl">Unassigned</div></div>
+  </div>`;
+
+  html += `<table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr>
+      <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);padding:6px 8px">Description</th>
+      <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);padding:6px 8px">Property</th>
+      <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);padding:6px 8px">Vendor</th>
+      <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);padding:6px 8px">Days</th>
+      <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);padding:6px 8px">Priority</th>
+    </tr></thead>
+    <tbody>
+      ${wos.map(wo => {
+        const pri = (wo.priority||'').toLowerCase();
+        const dotColor = pri==='high' ? '#DC2626' : pri==='medium' ? '#D97706' : '#8A9099';
+        const daysColor = wo.days_open >= 14 ? '#DC2626' : wo.days_open >= 7 ? '#D97706' : 'var(--muted)';
+        return `<tr style="border-bottom:1px solid #F0F2F5">
+          <td style="padding:8px 8px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(wo.description)}</td>
+          <td style="padding:8px 8px;color:var(--muted);font-size:12px">${esc(wo.property_name)}</td>
+          <td style="padding:8px 8px;color:${wo.vendor&&wo.vendor!=='Unassigned'?'var(--text)':'#DC2626'};font-size:12px">${esc(wo.vendor||'Unassigned')}</td>
+          <td style="padding:8px 8px;color:${daysColor};font-weight:600">${wo.days_open}d</td>
+          <td style="padding:8px 8px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-right:4px"></span>${esc(wo.priority||'—')}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+  body.innerHTML = html;
+}
+
+function renderDrawerInspections(body, list) {
+  if (!list.length) {
+    body.innerHTML = '<div class="drawer-loading">No inspection data available.</div>';
+    return;
+  }
+  const sorted = [...list].sort((a,b) => {
+    const s = {Overdue:0,'Due Soon':1,Current:2};
+    return (s[a.status]||3) - (s[b.status]||3);
+  });
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr>
+      <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);padding:6px 8px">Property</th>
+      <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);padding:6px 8px">Status</th>
+      <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);padding:6px 8px">Last Inspection</th>
+      <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);padding:6px 8px">Days Since</th>
+    </tr></thead>
+    <tbody>
+      ${sorted.map(r => {
+        const sc = r.status==='Overdue' ? '#DC2626' : r.status==='Due Soon' ? '#D97706' : '#16a34a';
+        return `<tr style="border-bottom:1px solid #F0F2F5">
+          <td style="padding:8px 8px">${esc(r.property_name)}</td>
+          <td style="padding:8px 8px"><span style="color:${sc};font-weight:700;font-size:12px">${esc(r.status)}</span></td>
+          <td style="padding:8px 8px;color:var(--muted);font-size:12px">${fmtDate(r.last_inspection_date)}</td>
+          <td style="padding:8px 8px;color:${r.status==='Overdue'?'#DC2626':'var(--muted)'}">${r.days_since != null ? r.days_since+'d' : 'Never'}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+  body.innerHTML = html;
+}
+
+/* ── Briefing ── */
+function toggleBriefing() {
+  const body = document.getElementById('briefing-body');
+  const chev = document.getElementById('briefing-chevron');
+  const open = body.classList.toggle('open');
+  if (chev) chev.textContent = open ? '▼' : '▶';
+}
+
+function renderBriefing(data) {
+  const el = document.getElementById('briefing-text');
+  if (!data || !data.text || !data.text.trim()) {
+    el.innerHTML = '<span class="briefing-placeholder">Briefing will be ready at 6:05 am tomorrow.</span>';
+    return;
+  }
+
+  function highlightNums(text) {
+    return text.replace(/(\$[\d,]+(?:\.\d+)?|[\d.]+%|\d+ days?|\d+ units?|\d+ leases?)/g,
+      '<span class="briefing-num">$1</span>');
+  }
+
+  function parseBullet(text) {
+    const colonIdx = text.indexOf(': ');
+    if (colonIdx > 0 && colonIdx < 50) {
+      return { header: text.slice(0, colonIdx), body: text.slice(colonIdx + 2) };
+    }
+    return { header: null, body: text };
+  }
+
+  const todayKey = `briefing-checks-${new Date().toISOString().slice(0, 10)}`;
+  const checkedSet = new Set(JSON.parse(localStorage.getItem(todayKey) || '[]'));
+
+  const lines = data.text.trim().split('\n').filter(l => l.trim());
+  let headlineHtml = '';
+  let itemsHtml = '';
+  let bulletIdx = 0;
+
+  lines.forEach((line, i) => {
+    const trimmed = line.trim().replace(/\*\*/g, '');
+    if (/^[•\-]\s*First Principle/i.test(trimmed)) return;
+    if (i === 0 && !trimmed.startsWith('•') && !trimmed.startsWith('-')) {
+      headlineHtml = `<div class="briefing-headline">${highlightNums(trimmed)}</div>`;
+    } else {
+      const text = trimmed.replace(/^[•\-]\s*/, '');
+      const { header, body } = parseBullet(text);
+      const idx = bulletIdx++;
+      const done = checkedSet.has(idx);
+      itemsHtml += `<div class="briefing-item-card${done ? ' done' : ''}" data-idx="${idx}" onclick="_toggleBriefingCheck(${idx})">
+        <div class="briefing-check-box${done ? ' done' : ''}">${done ? '✓' : ''}</div>
+        <div class="briefing-item-content">
+          ${header ? `<div class="briefing-item-header">${header}</div>` : ''}
+          <div class="briefing-item-body">${highlightNums(body)}</div>
+        </div>
+      </div>`;
+    }
+  });
+
+  let principleHtml = '';
+  if (data.principle) {
+    const p = data.principle;
+    principleHtml = `<div class="principle-callout">
+      <div class="principle-callout-eyebrow">&#9733; Core Value of the Day</div>
+      <div class="principle-callout-title">${p.title}</div>
+      <div class="principle-callout-body">${p.body}</div>
+    </div>`;
+  }
+
+  el.innerHTML = headlineHtml + `<div class="briefing-items">${itemsHtml}</div>` + principleHtml;
+  el.className = '';
+}
+
+window._toggleBriefingCheck = function(idx) {
+  const todayKey = `briefing-checks-${new Date().toISOString().slice(0, 10)}`;
+  const checkedSet = new Set(JSON.parse(localStorage.getItem(todayKey) || '[]'));
+  if (checkedSet.has(idx)) checkedSet.delete(idx); else checkedSet.add(idx);
+  localStorage.setItem(todayKey, JSON.stringify([...checkedSet]));
+  const card = document.querySelector(`.briefing-item-card[data-idx="${idx}"]`);
+  const box  = card?.querySelector('.briefing-check-box');
+  const isDone = checkedSet.has(idx);
+  if (card) card.classList.toggle('done', isDone);
+  if (box)  { box.classList.toggle('done', isDone); box.textContent = isDone ? '✓' : ''; }
+};
+
+/* ── Main load ── */
+async function loadAll() {
+  try {
+    const [kpisRes, briefingRes, meRes] = await Promise.all([
+      fetch('/api/kpis'),
+      fetch('/api/briefing?role=field_services'),
+      fetch('/auth/me'),
+    ]);
+
+    if (kpisRes.status === 401 || meRes.status === 401) {
+      window.location.href = '/auth/login'; return;
+    }
+
+    const kpis = await kpisRes.json();
+    lastKpis = kpis;
+
+    /* Sync time */
+    const ts = kpis.refreshed_at;
+    if (ts) {
+      const d = new Date(ts);
+      document.getElementById('sync-ts').textContent = 'Synced: ' + d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' at ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    }
+
+    /* User initials */
+    if (meRes.ok) {
+      const me = await meRes.json();
+      const initials = (me.name||me.email||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      document.getElementById('user-initials').textContent = initials;
+    }
+
+    /* Briefing */
+    if (briefingRes.ok) {
+      const brief = await briefingRes.json();
+      renderBriefing(brief);
+    }
+
+    /* Work orders */
+    const sor = kpis.speed_of_repair || {};
+    const openCount   = sor.open_count   ?? 0;
+    const overdueCount = sor.overdue_count ?? 0;
+    const avgDays     = sor.avg_days_to_close ?? null;
+    allOpenWOs    = (sor.open_work_orders    || []).slice().sort((a,b) => b.days_open - a.days_open);
+    allOverdueWOs = (sor.overdue_work_orders || []).slice().sort((a,b) => b.days_open - a.days_open);
+
+    /* KPI cards — work orders */
+    renderKPICard('kc-open-wo',   'Open Work Orders',   'open_work_orders',   openCount,    openCount,   null, null);
+    renderKPICard('kc-overdue-wo','Overdue Work Orders','overdue_work_orders', overdueCount, overdueCount,null, null);
+    renderKPICard('kc-sor',       'Speed of Repair',    'avg_days_to_close',  avgDays,
+      avgDays != null ? avgDays.toFixed(1) : '—', 'days',
+      `${openCount} open, ${overdueCount} overdue`);
+
+    /* Zero goals */
+    renderZeroGoals(kpis);
+
+    /* Compact lists */
+    renderWOList('compact-open-wos',    'dc-open-badge',    allOpenWOs);
+    renderWOList('compact-overdue-wos', 'dc-overdue-badge', allOverdueWOs);
+
+    /* Inspections */
+    renderInspections(kpis.inspection_compliance || []);
+
+    /* Offline banner */
+    if (ts) {
+      const age = (Date.now() - new Date(ts).getTime()) / 1000 / 3600;
+      if (age > 4) {
+        document.getElementById('offline-banner').style.display = 'block';
+        document.getElementById('offline-ts').textContent = new Date(ts).toLocaleString();
+      }
+    }
+
+  } catch(e) {
+    console.error('loadAll failed:', e);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadAll);
+</script>
+</body>
+</html>

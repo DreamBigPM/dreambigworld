@@ -770,6 +770,41 @@ def update_user_last_login(user_id: int) -> None:
         )
 
 
+def update_user_role(email: str, role: str) -> None:
+    """Set the role for an existing user."""
+    with _connect() as conn:
+        conn.execute("UPDATE users SET role = ? WHERE email = ?", (role, email))
+
+
+def seed_team_users() -> None:
+    """Ensure known team members exist with the correct roles."""
+    team = [
+        ("brian@dreambigpm.com",   "admin",                  "Brian Bean"),
+        ("kogi@dreambigpm.com",    "operations",             "Kogi"),
+        ("natalia@dreambigpm.com", "leasing_agent",          "Natalia"),
+        ("barbara@dreambigpm.com", "field_services",         "Barbara"),
+    ]
+    with _connect() as conn:
+        for email, role, name in team:
+            conn.execute(
+                "INSERT OR IGNORE INTO users (email, role, display_name) VALUES (?, ?, ?)",
+                (email, role, name),
+            )
+            conn.execute(
+                "UPDATE users SET role = ?, display_name = ? WHERE email = ?",
+                (role, name, email),
+            )
+
+
+def list_users() -> list:
+    """Return all active users for admin user management."""
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT id, email, role, display_name, is_active, last_login FROM users ORDER BY role, email"
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 # ---------------------------------------------------------------------------
 # Role Briefings
 # ---------------------------------------------------------------------------
@@ -895,6 +930,10 @@ def get_latest_raw_kpi_data() -> Optional[dict]:
 def save_financial_upload(period: str, parsed: dict, metrics: dict, door_count: int) -> int:
     """Save a parsed P&L upload. Returns the new row id."""
     import json
+    # Embed pass-through amounts in metrics_json so they're available for future corrections.
+    metrics_with_pt = dict(metrics)
+    metrics_with_pt["passthrough_income"]  = parsed.get("passthrough_income", 0)
+    metrics_with_pt["passthrough_expense"] = parsed.get("passthrough_expense", 0)
     with _connect() as conn:
         cur = conn.execute(
             """INSERT INTO financial_uploads
@@ -909,7 +948,7 @@ def save_financial_upload(period: str, parsed: dict, metrics: dict, door_count: 
                 parsed["total_expenses"],
                 parsed["net_income"],
                 door_count,
-                json.dumps(metrics),
+                json.dumps(metrics_with_pt),
             ),
         )
         return cur.lastrowid

@@ -57,8 +57,6 @@
     <div class="kpi-card gray"><div class="kpi-name">Expiring 30 Days</div><div class="kpi-value">&#8212;</div></div>
     <div class="kpi-card gray"><div class="kpi-name">Expiring 60 Days</div><div class="kpi-value">&#8212;</div></div>
     <div class="kpi-card gray"><div class="kpi-name">Expiring 90 Days</div><div class="kpi-value">&#8212;</div></div>
-    <div class="kpi-card gray"><div class="kpi-name">Residents</div><div class="kpi-value">&#8212;</div></div>
-    <div class="kpi-card gray"><div class="kpi-name">Investors</div><div class="kpi-value">&#8212;</div></div>
   </div>
 
   <!-- ════════════════════════════════════════════════════
@@ -371,9 +369,9 @@ function kpiColor(key, val) {
     speed_of_repair:    v => v <= 3  ? 'green' : v <= 7  ? 'yellow' : 'red',
     maint_satisfaction: v => v >= 70 ? 'green' : v >= 60 ? 'yellow' : 'red',
     google_rating:      v => v >= 4.8 ? 'green' : v >= 4.5 ? 'yellow' : 'red',
-    expiring_30:        v => v === 0  ? 'green' : v <= 2  ? 'yellow' : 'red',
-    expiring_60:        v => v === 0   ? 'green' : v <= 3  ? 'yellow' : 'red',
-    expiring_90:        v => v <= 5   ? 'green' : v <= 10 ? 'yellow' : 'red',
+    expiring_30:        () => null,
+    expiring_60:        () => null,
+    expiring_90:        () => null,
     resident_count:     () => 'gray',
     owner_count:        () => 'gray',
     avg_tenancy:        v => v >= 24 ? 'green' : v >= 12 ? 'yellow' : 'red',
@@ -444,26 +442,16 @@ function renderKPIs(d) {
     { key:'expiring_30',  name:'Leases Expiring ≤30 Days',  val: _exp30 || null,
       drill:'expiring_30',
       display: _exp30,
-      target:'Target: 0',
+      target:'',
       sub: '' },
     { key:'expiring_60',  name:'Leases Expiring ≤60 Days',  val: _exp60 || null,
       drill:'expiring_60',
       display: _exp60,
-      target:'Target: 0',
+      target:'',
       sub: '' },
     { key:'expiring_90',  name:'Leases Expiring ≤90 Days',  val: _exp90 || null,
       drill:'expiring_90',
       display: _exp90,
-      target:'Target: 0',
-      sub: '' },
-    { key:'resident_count', name:'Residents',       val: d.resident_count ?? null,
-      drill:null,
-      display: d.resident_count != null ? d.resident_count : '—',
-      target:'',
-      sub: '' },
-    { key:'owner_count',    name:'Investors',       val: d.owner_count ?? null,
-      drill:null,
-      display: d.owner_count != null ? d.owner_count : '—',
       target:'',
       sub: '' },
     { key:'avg_tenancy',    name:'Avg Tenancy',     val: d.avg_tenancy_months || null,
@@ -476,13 +464,13 @@ function renderKPIs(d) {
       drill:'turn_time',
       display: d.avg_turn_days ? Math.round(d.avg_turn_days) : '—',
       unit: d.avg_turn_days ? 'days' : '',
-      target:'Target ≤14 days',
+      target:'Target ≤21 days',
       sub: '' },
   ];
 
   const grid = document.getElementById('kpi-grid');
   grid.innerHTML = kpis.map(k => {
-    const color = k.val != null ? kpiColor(k.key, k.val) : 'gray';
+    const color = k.val != null ? (kpiColor(k.key, k.val) || 'none') : 'gray';
     const clickAttr = k.drill
       ? `onclick="openDrillDown('${k.drill}','${k.name}')"`
       : '';
@@ -492,7 +480,7 @@ function renderKPIs(d) {
       <div class="kpi-value">${esc(k.display)}${k.unit ? `<span class="kpi-unit"> ${esc(k.unit)}</span>` : ''}</div>
       <div class="kpi-target">${k.target}</div>
       ${k.sub ? `<div class="kpi-sub">${esc(k.sub)}</div>` : ''}
-      <div class="kpi-status">${color === 'gray' && k.val !== null ? '' : statusLabel[color]}</div>
+      <div class="kpi-status">${color === 'none' ? '' : color === 'gray' && k.val !== null ? '' : (statusLabel[color] || '')}</div>
     </div>`;
   }).join('');
 }
@@ -671,19 +659,34 @@ function renderRenewals(d) {
 // RENDER: LEASE EXPIRATION CALENDAR
 // ─────────────────────────────────────────────────────────
 function renderExpirationCalendar(d) {
-  const cal = (d.lease_expiry_calendar && d.lease_expiry_calendar.length) ? d.lease_expiry_calendar : (d.renewal_calendar || []);
+  const rawCal = (d.lease_expiry_calendar && d.lease_expiry_calendar.length) ? d.lease_expiry_calendar : (d.renewal_calendar || []);
   const el  = document.getElementById('compact-expiry-cal');
   const needsRenewal = (d.needs_renewal || []).length;
-  const shownMonths  = cal.slice(0, 8);
-  const totalExps    = shownMonths.reduce((s, m) => s + (m.count || 0), 0);
+
+  // Build a lookup by month_start so we can fill gaps
+  const byKey = {};
+  rawCal.forEach(m => { if (m.month_start) byKey[m.month_start] = m; });
+
+  // Always generate exactly 13 months starting from the current month
+  const cal = [];
+  const now = new Date();
+  for (let i = 0; i < 13; i++) {
+    const y = now.getFullYear() + Math.floor((now.getMonth() + i) / 12);
+    const mo = (now.getMonth() + i) % 12;
+    const key = `${y}-${String(mo + 1).padStart(2, '0')}-01`;
+    const monthLabel = new Date(y, mo, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    cal.push(byKey[key] || { month_start: key, month_label: monthLabel, count: 0 });
+  }
+
+  const totalExps = cal.reduce((s, m) => s + (m.count || 0), 0);
   _setBadge('dc-cal-badge', needsRenewal > 0 ? needsRenewal + ' need action' : totalExps + ' upcoming', needsRenewal > 0 ? 'warn' : 'gray');
 
-  if (!cal.length) {
+  if (!rawCal.length && totalExps === 0) {
     el.innerHTML = '<div class="compact-empty">No upcoming expirations on record</div>';
     return;
   }
-  const maxCount = Math.max(...cal.map(m => m.count));
-  el.innerHTML = cal.slice(0, 8).map(m => {
+  const maxCount = Math.max(...cal.map(m => m.count), 1);
+  el.innerHTML = cal.map(m => {
     const pct    = Math.max(Math.round((m.count / maxCount) * 100), 4);
     const cls    = m.count >= 6 ? 'red' : m.count >= 3 ? 'yellow' : 'green';
     const valCls = m.count >= 6 ? 'text-red' : m.count >= 3 ? 'text-yellow' : '';
@@ -775,21 +778,67 @@ function renderBriefing(data) {
       '<span class="briefing-num">$1</span>');
   }
 
+  function parseBullet(text) {
+    const colonIdx = text.indexOf(': ');
+    if (colonIdx > 0 && colonIdx < 50) {
+      return { header: text.slice(0, colonIdx), body: text.slice(colonIdx + 2) };
+    }
+    return { header: null, body: text };
+  }
+
+  const todayKey = `briefing-checks-${new Date().toISOString().slice(0, 10)}`;
+  const checkedSet = new Set(JSON.parse(localStorage.getItem(todayKey) || '[]'));
+
   const lines = data.text.trim().split('\n').filter(l => l.trim());
-  let html = '';
+  let headlineHtml = '';
+  let itemsHtml = '';
+  let bulletIdx = 0;
+
   lines.forEach((line, i) => {
-    const trimmed = line.trim();
+    const trimmed = line.trim().replace(/\*\*/g, '');
+    if (/^[•\-]\s*First Principle/i.test(trimmed)) return;
     if (i === 0 && !trimmed.startsWith('•') && !trimmed.startsWith('-')) {
-      html += `<div class="briefing-headline">${highlightNums(trimmed)}</div>`;
+      headlineHtml = `<div class="briefing-headline">${highlightNums(trimmed)}</div>`;
     } else {
       const text = trimmed.replace(/^[•\-]\s*/, '');
-      html += `<div class="briefing-bullet"><span class="briefing-dot">•</span><span>${highlightNums(text)}</span></div>`;
+      const { header, body } = parseBullet(text);
+      const idx = bulletIdx++;
+      const done = checkedSet.has(idx);
+      itemsHtml += `<div class="briefing-item-card${done ? ' done' : ''}" data-idx="${idx}" onclick="_toggleBriefingCheck(${idx})">
+        <div class="briefing-check-box${done ? ' done' : ''}">${done ? '✓' : ''}</div>
+        <div class="briefing-item-content">
+          ${header ? `<div class="briefing-item-header">${header}</div>` : ''}
+          <div class="briefing-item-body">${highlightNums(body)}</div>
+        </div>
+      </div>`;
     }
   });
 
-  el.innerHTML = html;
+  let principleHtml = '';
+  if (data.principle) {
+    const p = data.principle;
+    principleHtml = `<div class="principle-callout">
+      <div class="principle-callout-eyebrow">&#9733; Core Value of the Day</div>
+      <div class="principle-callout-title">${p.title}</div>
+      <div class="principle-callout-body">${p.body}</div>
+    </div>`;
+  }
+
+  el.innerHTML = headlineHtml + `<div class="briefing-items">${itemsHtml}</div>` + principleHtml;
   el.className = '';
 }
+
+window._toggleBriefingCheck = function(idx) {
+  const todayKey = `briefing-checks-${new Date().toISOString().slice(0, 10)}`;
+  const checkedSet = new Set(JSON.parse(localStorage.getItem(todayKey) || '[]'));
+  if (checkedSet.has(idx)) checkedSet.delete(idx); else checkedSet.add(idx);
+  localStorage.setItem(todayKey, JSON.stringify([...checkedSet]));
+  const card = document.querySelector(`.briefing-item-card[data-idx="${idx}"]`);
+  const box  = card?.querySelector('.briefing-check-box');
+  const isDone = checkedSet.has(idx);
+  if (card) card.classList.toggle('done', isDone);
+  if (box)  { box.classList.toggle('done', isDone); box.textContent = isDone ? '✓' : ''; }
+};
 
 // ─────────────────────────────────────────────────────────
 // TOGGLES
@@ -1474,7 +1523,7 @@ function renderDrawer(section, data) {
   if (section === 'turn_time') {
     const rows = data.records || [];
     const avg  = data.avg_days;
-    const avgColor = avg == null ? '' : avg <= 14 ? 'green' : avg <= 30 ? 'yellow' : 'red';
+    const avgColor = avg == null ? '' : avg <= 21 ? 'green' : avg <= 35 ? 'yellow' : 'red';
     body.innerHTML = dstats(
       dstat(avg != null ? Math.round(avg) + ' days' : '—', 'Avg Vacate-to-Lease Time', avgColor, avgColor),
       dstat(rows.length, 'Vacancies (Last 2 Yrs)', '', ''),
@@ -1483,7 +1532,7 @@ function renderDrawer(section, data) {
     ) + (rows.length ? `<div class="table-wrap"><table>
       <thead><tr><th>Unit</th><th>Previous Resident Out</th><th>New Resident In</th><th>Days Vacant</th></tr></thead>
       <tbody>${rows.map(r => {
-        const cls = r.gap_days <= 14 ? 'text-green' : r.gap_days <= 30 ? 'text-yellow' : 'text-red';
+        const cls = r.gap_days <= 21 ? 'text-green' : r.gap_days <= 35 ? 'text-yellow' : 'text-red';
         return `<tr>
           <td class="font-mono">${esc(r.unit_label||r.unit_id||'')}</td>
           <td class="text-muted">${fmtDate(r.prev_end)}</td>
@@ -1673,8 +1722,12 @@ function openFinModal(key) {
 
   const fmt$ = v => '$' + Math.abs(v).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
   const fmtPct = v => v.toFixed(2) + '%';
+  // Always derive total_expenses from the accounting identity so modal math reconciles
+  const totalExp = gr - (bd.net_income || 0);
+  const expRatio = gr > 0 ? totalExp / gr * 100 : 0;
 
   const titles = {
+    revenue: 'Revenue', net_income: 'Net Income',
     rpu: 'Revenue Per Unit (RPU)', ppu: 'Profit Per Unit (PPU)',
     dler: 'Direct Labor Efficiency Ratio (DLER)',
     mler: 'Management Labor Efficiency Ratio (MLER)',
@@ -1684,7 +1737,33 @@ function openFinModal(key) {
 
   let html = '';
 
-  if (key === 'rpu') {
+  if (key === 'revenue') {
+    const period = lastFinancials.period || '';
+    html = `
+      <div style="margin-bottom:10px;font-size:12px;color:#6b7280">${period} · management fees, leasing fees &amp; all income lines</div>
+      <table class="fin-detail-table">
+        <tr><td style="color:#6b7280">Door Count</td><td style="text-align:right;font-weight:600">${bd.door_count}</td></tr>
+        <tr class="fin-total"><td style="font-weight:700">Total Revenue</td><td style="text-align:right;font-weight:700">${fmt$(gr)}</td></tr>
+      </table>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        Revenue per Door: <span style="color:${m.rpu>=335?'#16a34a':'#dc2626'}">${fmt$(m.rpu)}/door</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: $335/door (RPU)</div>`;
+  } else if (key === 'net_income') {
+    const niColor = bd.net_income >= 0 ? '#16a34a' : '#dc2626';
+    const niSign  = bd.net_income < 0 ? '−' : '';
+    html = `
+      <div style="margin-bottom:10px"><strong>Formula:</strong> Revenue − Total Expenses</div>
+      <table class="fin-detail-table">
+        <tr><td style="color:#6b7280">Total Revenue</td><td style="text-align:right;font-weight:600">${fmt$(gr)}</td></tr>
+        <tr><td style="color:#6b7280">Total Expenses</td><td style="text-align:right;font-weight:500">${fmt$(totalExp)}</td></tr>
+        <tr class="fin-total"><td style="font-weight:700">Net Income</td><td style="text-align:right;font-weight:700;color:${niColor}">${niSign}${fmt$(bd.net_income)}</td></tr>
+      </table>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        Profit per Door: <span style="color:${m.ppu>=50?'#16a34a':'#dc2626'}">${m.ppu<0?'−':''}${fmt$(m.ppu)}/door</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: $50/door (PPU) · Expense ratio: ${expRatio.toFixed(1)}%</div>`;
+  } else if (key === 'rpu') {
     html = `
       <div style="margin-bottom:10px"><strong>Formula:</strong> Revenue ÷ Door Count</div>
       <table class="fin-detail-table">
@@ -1708,17 +1787,12 @@ function openFinModal(key) {
       </div>
       <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: $50/door</div>`;
   } else if (key === 'dler') {
-    const rows = (bd.dler_items||[]).map(i =>
-      `<tr><td style="color:#6b7280">${i.gl} &nbsp;${i.name}</td><td style="text-align:right;font-weight:500">${fmt$(i.amount)}</td></tr>`
-    ).join('');
     const dlerColor = m.dler >= 4.51 ? '#16a34a' : '#dc2626';
     html = `
       <div style="margin-bottom:4px"><strong>Formula:</strong> Revenue ÷ Direct Labor</div>
       <div style="margin-bottom:10px;font-size:12px;color:#6b7280">For every $1 of direct labor, how many dollars of revenue?</div>
-      <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af;margin-bottom:4px">Direct Labor Accounts</div>
       <table class="fin-detail-table">
-        ${rows}
-        <tr class="fin-total"><td style="font-weight:700">Total Direct Labor</td><td style="text-align:right;font-weight:700">${fmt$(bd.direct_labor)}</td></tr>
+        <tr class="fin-total"><td style="font-weight:700">Direct Labor</td><td style="text-align:right;font-weight:700">${fmt$(bd.direct_labor)}</td></tr>
         <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmt$(gr)}</td></tr>
       </table>
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
@@ -1726,17 +1800,12 @@ function openFinModal(key) {
       </div>
       <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: 4.51 &nbsp;·&nbsp; Higher is better</div>`;
   } else if (key === 'mler') {
-    const rows = (bd.mler_items||[]).map(i =>
-      `<tr><td style="color:#6b7280">${i.gl} &nbsp;${i.name}</td><td style="text-align:right;font-weight:500">${fmt$(i.amount)}</td></tr>`
-    ).join('');
     const mlerColor = m.mler >= 3.89 ? '#16a34a' : '#dc2626';
     html = `
       <div style="margin-bottom:4px"><strong>Formula:</strong> Revenue ÷ Management Labor</div>
       <div style="margin-bottom:10px;font-size:12px;color:#6b7280">For every $1 of management labor, how many dollars of revenue?</div>
-      <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af;margin-bottom:4px">Management Labor Accounts</div>
       <table class="fin-detail-table">
-        ${rows}
-        <tr class="fin-total"><td style="font-weight:700">Total Mgmt Labor</td><td style="text-align:right;font-weight:700">${fmt$(bd.mgmt_labor)}</td></tr>
+        <tr class="fin-total"><td style="font-weight:700">Management Labor</td><td style="text-align:right;font-weight:700">${fmt$(bd.mgmt_labor)}</td></tr>
         <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmt$(gr)}</td></tr>
       </table>
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
@@ -1745,28 +1814,27 @@ function openFinModal(key) {
       <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: 3.89 &nbsp;·&nbsp; Higher is better</div>`;
   } else if (key === 'tler') {
     const tlerColor = m.tler >= 2.05 ? '#16a34a' : '#dc2626';
+    const totalLabor = bd.direct_labor + bd.mgmt_labor;
     html = `
       <div style="margin-bottom:4px"><strong>Formula:</strong> Revenue ÷ Total Labor</div>
       <div style="margin-bottom:10px;font-size:12px;color:#6b7280">For every $1 of total labor (direct + management), how many dollars of revenue?</div>
       <table class="fin-detail-table">
-        <tr><td style="color:#6b7280">Direct Labor (6319.01, 6325, 6339.01, 6339.02)</td><td style="text-align:right;font-weight:500">${fmt$(bd.direct_labor)}</td></tr>
-        <tr><td style="color:#6b7280">Mgmt Labor (6410)</td><td style="text-align:right;font-weight:500">${fmt$(bd.mgmt_labor)}</td></tr>
-        <tr class="fin-total"><td style="font-weight:700">Total Labor</td><td style="text-align:right;font-weight:700">${fmt$(bd.direct_labor + bd.mgmt_labor)}</td></tr>
+        <tr class="fin-total"><td style="font-weight:700">Total Labor</td><td style="text-align:right;font-weight:700">${fmt$(totalLabor)}</td></tr>
         <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmt$(gr)}</td></tr>
       </table>
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
-        ${fmt$(gr)} ÷ ${fmt$(bd.direct_labor + bd.mgmt_labor)} = <span style="color:${tlerColor}">${m.tler.toFixed(2)}</span>
+        ${fmt$(gr)} ÷ ${fmt$(totalLabor)} = <span style="color:${tlerColor}">${m.tler.toFixed(2)}</span>
       </div>
       <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: 2.05 &nbsp;·&nbsp; Higher is better</div>`;
   } else if (key === 'expense_ratio') {
     html = `
       <div style="margin-bottom:14px"><strong>Formula:</strong> Total Expenses ÷ Revenue</div>
       <table style="width:100%;border-collapse:collapse;font-size:13px">
-        <tr><td style="padding:5px 0;color:#6b7280">Total Expenses</td><td style="text-align:right;font-weight:600">${fmt$(bd.total_expenses)}</td></tr>
+        <tr><td style="padding:5px 0;color:#6b7280">Total Expenses</td><td style="text-align:right;font-weight:600">${fmt$(totalExp)}</td></tr>
         <tr><td style="padding:5px 0;color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmt$(gr)}</td></tr>
       </table>
       <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
-        ${fmt$(bd.total_expenses)} ÷ ${fmt$(gr)} = <span style="color:${m.expense_ratio<40?'#16a34a':m.expense_ratio<50?'#d97706':'#dc2626'}">${fmtPct(m.expense_ratio)}</span>
+        ${fmt$(totalExp)} ÷ ${fmt$(gr)} = <span style="color:${expRatio<40?'#16a34a':expRatio<50?'#d97706':'#dc2626'}">${fmtPct(expRatio)}</span>
       </div>
       <div style="margin-top:6px;font-size:12px;color:#6b7280">Target: &lt;40%</div>`;
   }
@@ -1787,19 +1855,23 @@ function closeFinModal() {
 // ─────────────────────────────────────────────────────────
 // 2025 NARPM benchmarks: RPU $335, DLER 4.51, MLER 3.89, TLER 2.05
 const QB_THRESHOLDS = {
+  revenue:       { green: v => v > 0,    yellow: v => v > 0,    fmt: v => '$' + Math.round(v).toLocaleString() },
+  net_income:    { green: v => v > 0,    yellow: v => v > -5000, fmt: v => (v < 0 ? '-$' : '$') + Math.abs(Math.round(v)).toLocaleString() },
   rpu:           { green: v => v >= 335,  yellow: v => v >= 268,  fmt: v => '$' + Math.round(v) + '<span class="kpi-unit">/door</span>' },
-  ppu:           { green: v => v >= 50,   yellow: v => v >= 0,    fmt: v => '$' + Math.round(v) + '<span class="kpi-unit">/door</span>' },
+  ppu:           { green: v => v >= 50,   yellow: v => v >= 0,    fmt: v => (v < 0 ? '-$' : '$') + Math.abs(Math.round(v)) + '<span class="kpi-unit">/door</span>' },
   dler:          { green: v => v >= 4.51, yellow: v => v >= 3.61, fmt: v => v.toFixed(2) },
   mler:          { green: v => v >= 3.89, yellow: v => v >= 3.11, fmt: v => v.toFixed(2) },
   tler:          { green: v => v >= 2.05, yellow: v => v >= 1.64, fmt: v => v.toFixed(2) },
   expense_ratio: { green: v => v < 40,   yellow: v => v < 50,    fmt: v => v.toFixed(1) + '%', invertColor: true },
 };
 const QB_NAMES = {
-  rpu: 'Revenue Per Unit', ppu: 'Profit Per Unit',
+  revenue: 'Revenue', net_income: 'Net Income',
+  rpu: 'Revenue/Door', ppu: 'Profit/Door',
   dler: 'Direct Labor (DLER)', mler: 'Mgmt Labor (MLER)',
   tler: 'Total Labor (TLER)', expense_ratio: 'Expense Ratio',
 };
 const QB_TARGETS = {
+  revenue: '',          net_income: '',
   rpu:  'NARPM $335/door', ppu: 'NARPM $50/door',
   dler: 'NARPM 4.51',      mler: 'NARPM 3.89',
   tler: 'NARPM 2.05',      expense_ratio: 'Target <40%',
@@ -1839,9 +1911,15 @@ function renderQBMetrics(d) {
   }
 
   const m    = d.metrics;
-  const keys = ['rpu', 'ppu', 'dler', 'mler', 'tler'];
+  const bd   = m.breakdown || {};
+  // Inject revenue/net_income from breakdown into the metrics object for card rendering
+  const mExt = Object.assign({}, m, {
+    revenue:    bd.gross_revenue != null ? bd.gross_revenue : null,
+    net_income: bd.net_income    != null ? bd.net_income    : null,
+  });
+  const keys = ['revenue', 'net_income', 'rpu', 'ppu', 'dler', 'mler', 'tler'];
   const cards = keys.map(k => {
-    const val   = m[k];
+    const val   = mExt[k];
     const color = qbColor(k, val);
     const t     = QB_THRESHOLDS[k];
     const disp      = val != null ? t.fmt(val) : '—';
@@ -2236,10 +2314,45 @@ function _renderChurnDrawer(data, body) {
   const history = data.history || [];
   const avgPct  = data.average_churn_pct;
 
+  // Annualized projection for current year
+  let projHtml = '';
+  const curEntry = history.find(h => h.year === data.current_year);
+  if (curEntry && curEntry.offboards > 0) {
+    const now        = new Date();
+    const yearStart  = new Date(data.current_year, 0, 1);
+    const yearEnd    = new Date(data.current_year, 11, 31);
+    const daysElapsed   = Math.max(1, Math.floor((now - yearStart) / 86400000) + 1);
+    const daysInYear    = Math.floor((yearEnd - yearStart) / 86400000) + 1;
+    const daysRemaining = Math.max(0, daysInYear - daysElapsed);
+    const dailyRate       = curEntry.offboards / daysElapsed;
+    const projOffboards   = Math.round((curEntry.offboards + dailyRate * daysRemaining) * 10) / 10;
+    const projPct         = (projOffboards / curEntry.start_doors * 100);
+    const projColor       = projPct <= 10 ? '#16a34a' : projPct <= 15 ? '#d97706' : '#dc2626';
+    const onOff           = projPct <= 10 ? 'on track' : 'above target';
+    projHtml = `
+      <div style="margin:12px 0 4px;padding:12px 16px;background:#f0f9f4;border:1px solid #d1fae5;border-radius:8px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:6px">
+          ${data.current_year} Annualized Projection
+        </div>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+          <span style="font-size:28px;font-weight:700;color:${projColor}">${projPct.toFixed(1)}%</span>
+          <span style="font-size:13px;color:#6b7280">${onOff} for ≤10% target</span>
+        </div>
+        <div style="font-size:12px;color:#6b7280;margin-top:6px">
+          ${curEntry.offboards} lost so far · ${daysElapsed} days elapsed ·
+          ${daysRemaining} days left ·
+          ${dailyRate.toFixed(3)}/day → ~${projOffboards} projected full-year losses
+          out of ${curEntry.start_doors} doors
+        </div>
+      </div>`;
+  }
+
   // Stats row
   const statsHtml = dstats(
     dstat(data.current_churn_pct != null ? data.current_churn_pct.toFixed(2) + '%' : '—',
-      'YTD Churn ' + data.current_year, '', ''),
+      'YTD Churn ' + data.current_year,
+      data.current_churn_pct == null ? '' : data.current_churn_pct <= 10 ? 'green' : data.current_churn_pct <= 15 ? 'yellow' : 'red',
+      data.current_churn_pct == null ? '' : data.current_churn_pct <= 10 ? 'green' : data.current_churn_pct <= 15 ? 'yellow' : 'red'),
     dstat(avgPct != null ? avgPct.toFixed(2) + '%' : '—', 'All-Time Avg', '', ''),
     dstat(data.current_door_count ?? '—', 'Doors Today', '', ''),
   );
@@ -2267,10 +2380,10 @@ function _renderChurnDrawer(data, body) {
     <tbody>${tRows}</tbody>
   </table></div>
   <div style="font-size:12px;color:var(--muted);margin-top:12px;padding:8px 12px;background:#f9f8f6;border-radius:6px">
-    NARPM benchmark: &lt;15% annual churn
+    Your target: ≤10% annual churn · NARPM benchmark: &lt;15%
   </div>`;
 
-  body.innerHTML = statsHtml + chartHtml + tableHtml;
+  body.innerHTML = statsHtml + projHtml + chartHtml + tableHtml;
 }
 
 function _churnBarChart(history, avgPct) {
@@ -2303,10 +2416,14 @@ function _churnBarChart(history, avgPct) {
       stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="4,3"/>
       <text x="${W - padR + 2}" y="${ay + 4}" font-size="10" fill="#9ca3af">Avg</text>`;
   }
+  const targetY  = padT + scaleY(10);
+  const targetLine = `<line x1="${padL}" y1="${targetY}" x2="${W - padR}" y2="${targetY}"
+    stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text x="${W - padR + 2}" y="${targetY + 4}" font-size="10" fill="#dc2626">10%</text>`;
 
   return `<div style="overflow-x:auto;margin:16px 0">
     <svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block">
-      ${bars}${avgLine}
+      ${bars}${avgLine}${targetLine}
     </svg>
   </div>`;
 }

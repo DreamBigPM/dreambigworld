@@ -16,6 +16,13 @@ logger = logging.getLogger(__name__)
 DLER_ACCOUNTS = {"6319.01", "6325", "6339.01", "6339.02"}
 MLER_ACCOUNTS = {"6410"}
 
+# Pass-through accounts excluded from NARPM metrics (appliance reimbursements).
+# 7999.01 = Maint Reimburse Income  (QB "Other Income" section — not in Total for Income)
+# 8999.01 = Repair for Reimbursement (QB "Other Expenses" section — not in Total for Expenses)
+# Neither affects gross_revenue or total_expenses; both affect net_income only.
+PASSTHROUGH_INCOME_ACCOUNTS  = {"7999.01"}
+PASSTHROUGH_EXPENSE_ACCOUNTS = {"8999.01"}
+
 
 def _parse_dollar(s: str) -> float:
     s = s.strip().replace(",", "").replace("$", "")
@@ -72,6 +79,8 @@ def parse_pl_pdf(file_bytes: bytes) -> dict:
     net_income     = None
     dler_items     = []
     mler_items     = []
+    passthrough_income_total  = 0.0
+    passthrough_expense_total = 0.0
 
     # Regex to match a detail line: GL_NUMBER  Account Name  amount
     # e.g. "6319.01 Field Services Coordinator 1,618.75"
@@ -112,6 +121,10 @@ def parse_pl_pdf(file_bytes: bytes) -> dict:
             if gl in MLER_ACCOUNTS:
                 if not any(i["gl"] == gl for i in mler_items):
                     mler_items.append({"gl": gl, "name": name, "amount": amount})
+            if gl in PASSTHROUGH_INCOME_ACCOUNTS:
+                passthrough_income_total += amount
+            if gl in PASSTHROUGH_EXPENSE_ACCOUNTS:
+                passthrough_expense_total += amount
 
     direct_labor = round(sum(i["amount"] for i in dler_items), 2) if dler_items else None
     mgmt_labor   = round(sum(i["amount"] for i in mler_items), 2) if mler_items else None
@@ -132,16 +145,26 @@ def parse_pl_pdf(file_bytes: bytes) -> dict:
             )
         }
 
+    # Remove pass-through accounts from net income only.
+    # Both 7999.01 and 8999.01 live in QB's "Other Income" / "Other Expenses" sections,
+    # so they never appear in gross_revenue or total_expenses — only in net_income.
+    # Removing 7999.01 income reduces net_income; removing 8999.01 expense improves it.
+    adjusted_net_income = round(net_income
+                                + passthrough_expense_total
+                                - passthrough_income_total, 2)
+
     return {
-        "period":        period,
-        "gross_revenue": gross_revenue,
-        "direct_labor":  direct_labor,
-        "mgmt_labor":    mgmt_labor,
-        "total_expenses":total_expenses,
-        "net_income":    net_income,
-        "dler_items":    dler_items,
-        "mler_items":    mler_items,
-        "error":         None,
+        "period":                   period,
+        "gross_revenue":            gross_revenue,
+        "direct_labor":             direct_labor,
+        "mgmt_labor":               mgmt_labor,
+        "total_expenses":           total_expenses,
+        "net_income":               adjusted_net_income,
+        "dler_items":               dler_items,
+        "mler_items":               mler_items,
+        "passthrough_income":       round(passthrough_income_total, 2),
+        "passthrough_expense":      round(passthrough_expense_total, 2),
+        "error":                    None,
     }
 
 
@@ -153,8 +176,9 @@ def compute_narpm_metrics(parsed: dict, door_count: int) -> dict:
 
     dl = parsed.get("direct_labor")   or 0
     ml = parsed.get("mgmt_labor")     or 0
-    te = parsed.get("total_expenses") or 0
     ni = parsed.get("net_income")     or 0
+    # Use accounting identity so modal math always reconciles: Revenue − Net Income = Total Expenses
+    te = gr - ni
 
     total_labor = dl + ml
     dler = round(gr / dl,           2) if dl > 0 else None

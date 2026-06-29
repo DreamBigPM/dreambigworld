@@ -285,7 +285,8 @@ def _read_churn_xlsx() -> list[dict]:
 
         if not raw_date or not raw_property:
             d = _to_int(raw_doors)
-            if d is not None:
+            # Ignore year-label rows (e.g. "2026" in col S used as a section header)
+            if d is not None and d < 500:
                 prev_doors = d
             continue
 
@@ -424,15 +425,30 @@ def compute_churn_summary(rows: list[dict]) -> dict:
     current_year = date.today().year
     start_year   = 2023  # earliest year to report
 
-    # Determine Jan 1 door count for each year:
-    # = doors value of the last row whose date falls on or before Dec 31 of the prior year.
+    # Confirmed historical data — spreadsheet tracking has gaps for these years.
+    # Brian verified these numbers directly (June 2026).
+    # 2025 offboards = 16 actual losses; 4 additional were temporary deactivations
+    # (not churn), which is why 2025 end_doors=119 despite start+adds-offboards=123.
+    CONFIRMED_HISTORY = {
+        2023: {"start_doors": 32,  "adds": 36,  "offboards": 0,  "end_doors": 68,  "churn_pct": 0.0},
+        2024: {"start_doors": 68,  "adds": 27,  "offboards": 17, "end_doors": 78,  "churn_pct": round(17/68*100, 2)},
+        2025: {"start_doors": 80,  "adds": 59,  "offboards": 16, "end_doors": 119, "churn_pct": round(16/80*100, 2)},
+    }
+
+    # Determine Jan 1 door count for current-year live computation.
     def _year_start_doors(year: int) -> int:
+        if year in CONFIRMED_HISTORY:
+            return CONFIRMED_HISTORY[year]["start_doors"]
         cutoff = f"{year - 1}-12-31"
         prior = [r for r in rows if r["date_iso"] <= cutoff]
         return prior[-1]["doors"] if prior else 0
 
     history = []
     for yr in range(start_year, current_year + 1):
+        if yr in CONFIRMED_HISTORY:
+            history.append({"year": yr, **CONFIRMED_HISTORY[yr]})
+            continue
+
         yr_start = f"{yr}-01-01"
         yr_end   = f"{yr}-12-31"
 
@@ -441,7 +457,7 @@ def compute_churn_summary(rows: list[dict]) -> dict:
         start_doors = _year_start_doors(yr)
         adds        = sum(1 for r in yr_rows if r["is_add"])
         offboards   = sum(1 for r in yr_rows if r["is_offboard"])
-        end_doors   = (yr_rows[-1]["doors"] if yr_rows else start_doors)
+        end_doors   = yr_rows[-1]["doors"] if yr_rows else start_doors
         churn_pct   = (
             round(offboards / start_doors * 100, 2)
             if start_doors > 0
