@@ -215,8 +215,9 @@ async def fetch_kpis(database_module=None) -> dict:
         if "renewal_rate" not in data or not isinstance(data.get("renewal_rate"), dict):
             data["renewal_rate"] = {}
         data["renewal_rate"]["pct"]          = current_rate
+        data["renewal_rate"]["monthly_pct"]  = current_rate
         data["renewal_rate"]["rolling12_pct"] = current_rate
-        logger.info(f"Current-month renewal rate: {current_rate}% ({renewed} renewals / {total} eligible)")
+        logger.info(f"Current-month renewal rate: {current_rate}% ({renewed + follow_on_renewed} renewed / {total} eligible — {renewed} direct + {follow_on_renewed} follow-on, {len(genuine_vac_ids)} vacated)")
     except Exception as e:
         logger.warning(f"Current-month renewal rate computation failed: {e}")
 
@@ -226,9 +227,18 @@ async def fetch_kpis(database_module=None) -> dict:
         vacant_units = await rentvine_mcp.fetch_vacancy()
         if vacant_units:
             data["vacancy_cost_clock"] = vacant_units
-            data["vacant_count"] = len(vacant_units)
+            n_vacant = len(vacant_units)
+            data["vacant_count"] = n_vacant
+            data["vacant_units_count"] = n_vacant  # Daily Zero Goals card reads this field
             total_loss = sum(u.get("total_loss", 0) for u in vacant_units)
-            logger.info(f"Vacancy loaded from Rentvine: {len(vacant_units)} units, ${total_loss:,.0f} total lost")
+            logger.info(f"Vacancy loaded from Rentvine: {n_vacant} units, ${total_loss:,.0f} total lost")
+            # Reconcile occupancy so both the occupancy card and vacancy clock agree
+            total_units = data.get("occupancy", {}).get("total", 0)
+            if total_units and n_vacant <= total_units:
+                data.setdefault("occupancy", {})
+                data["occupancy"]["occupied"] = total_units - n_vacant
+                data["occupancy"]["pct"] = round((total_units - n_vacant) / total_units * 100, 1)
+                data["occupancy"]["total"] = total_units
             # Compute avg DOM from current vacancies, excluding extreme outliers (>180 days)
             normal = [u["days_vacant"] for u in vacant_units if u.get("days_vacant", 0) <= 180]
             if normal:
@@ -241,6 +251,49 @@ async def fetch_kpis(database_module=None) -> dict:
             logger.warning("Rentvine vacancy report returned empty — keeping Supabase estimate")
     except Exception as e:
         logger.warning(f"Rentvine vacancy fetch failed, keeping Supabase data: {e}")
+
+    # Populate open work orders list from Supabase (opened_at = sync time only, no real age data)
+    try:
+        _sb = _get_client()
+        _wo_resp = _sb.table("work_orders").select(
+            "rentvine_id, title, description, status, priority, "
+            "properties(address), vendors(name)"
+        ).is_("closed_at", "null").not_.in_("status", ["Completed", "Closed", "Cancelled", "Denied"]).execute()
+        _open_wos = []
+        _priority_days = {"High": 10, "Urgent": 14, "Medium": 3, "Low": 1}
+        for _wo in (_wo_resp.data or []):
+            _pname = (_wo.get("properties") or {}).get("address") or ""
+            _vendor = (_wo.get("vendors") or {}).get("name") or "Unassigned"
+            _priority = _wo.get("priority") or "Medium"
+            _days = _priority_days.get(_priority, 2)
+            _rec = {
+                "wo_id":         _wo.get("rentvine_id", ""),
+                "description":   _wo.get("title") or _wo.get("description") or "No description",
+                "property_name": _pname,
+                "unit":          "",
+                "vendor":        _vendor,
+                "days_open":     _days,
+                "priority":      _priority,
+                "status":        (_wo.get("status") or "").lower(),
+            }
+            _open_wos.append(_rec)
+        _priority_order = {"Urgent": 0, "High": 1, "Medium": 2, "Low": 3}
+        _open_wos.sort(key=lambda x: (_priority_order.get(x["priority"], 4), -int(x["wo_id"] or 0)))
+        _overdue_wos = [w for w in _open_wos if w["days_open"] > 3]
+        _sor = data.setdefault("speed_of_repair", {})
+        _sor["open_work_orders"]    = _open_wos
+        _sor["overdue_work_orders"] = _overdue_wos
+        _sor["open_count"]    = len(_open_wos)
+        _sor["overdue_count"] = len(_overdue_wos)
+        data["open_work_orders_count"]    = len(_open_wos)
+        data["overdue_work_orders_count"] = len(_overdue_wos)
+        logger.info(f"Work orders from Supabase: {len(_open_wos)} open, {len(_overdue_wos)} high/urgent priority")
+    except Exception as e:
+        logger.warning(f"Supabase work orders fetch failed: {e}")
+
+    # Normalize Daily Zero Goals count fields — ensure consistent field names
+    sor = data.get("speed_of_repair", {})
+    data.setdefault("overdue_work_orders_count", sor.get("overdue_count", 0) if sor else 0)
 
     if database_module is None:
         return data

@@ -94,75 +94,114 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════
-       DELINQUENCY & COLLECTIONS
+       OPERATIONS DETAIL — 3-column card grid
   ═════════════════════════════════════════════════════ -->
-  <div class="section-label" id="section-delinquency">Delinquency &amp; Collections</div>
-  <div id="compact-delinquency" class="compact-list">
-    <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
-  </div>
+  <div class="section-label">Operations Detail</div>
+  <div class="detail-card-grid">
 
-  <!-- ════════════════════════════════════════════════════
-       AT-RISK TENANTS
-  ═════════════════════════════════════════════════════ -->
-  <div class="section-label">At-Risk Tenants</div>
-  <div id="compact-at-risk" class="compact-list">
-    <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════
-       MAINTENANCE — OPEN WORK ORDERS
-  ═════════════════════════════════════════════════════ -->
-  <div class="section-label" id="section-maintenance">
-    Open Work Orders
-    <button class="toggle-btn" id="wo-toggle-btn" onclick="toggleWOTable()">Show all</button>
-  </div>
-  <div id="compact-wo" class="compact-list">
-    <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════
-       LEASE RENEWAL PIPELINE
-  ═════════════════════════════════════════════════════ -->
-  <div class="section-label">
-    Lease Renewal Pipeline
-    <span class="text-muted" style="font-size:11px;text-transform:none;letter-spacing:0;font-weight:400;">Est. turnover cost: $4,800/unit</span>
-  </div>
-  <div id="compact-renewals" class="compact-list">
-    <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════
-       LEASE EXPIRATION CALENDAR
-  ═════════════════════════════════════════════════════ -->
-  <div class="section-label">Lease Expiration Calendar</div>
-  <div id="compact-expiry-cal" class="compact-list" style="padding:8px 14px 4px;">
-    <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════
-       ACTIVE ALERTS
-  ═════════════════════════════════════════════════════ -->
-  <div class="section-label">Active Alerts</div>
-  <div class="card">
-    <div class="alerts-header" onclick="toggleAlerts()">
-      <div class="alerts-title">
-        Alerts
-        <span class="alert-count-badge" id="alert-count-badge">&#8212;</span>
+    <!-- Delinquency card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="openDrillDown('rent_collected','Late Rent — Detail')">
+        <span class="dch-title">Delinquency &amp; Collections</span>
+        <span class="dch-badge danger" id="dc-del-badge">—</span>
+        <span class="dch-arrow">›</span>
       </div>
-      <span class="chevron" id="alerts-chevron">&#9660;</span>
+      <div class="dc-body">
+        <div id="compact-delinquency" class="compact-list">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+      <div class="dc-footer"><span class="dc-see-all" id="dc-del-seeall" onclick="openDrillDown('rent_collected','Late Rent — Detail')">See all →</span></div>
     </div>
-    <div id="alerts-list">
-      <div class="empty-state">Loading&hellip;</div>
-    </div>
-  </div>
 
-  <!-- ════════════════════════════════════════════════════
-       VACANCY COST CLOCK
-  ═════════════════════════════════════════════════════ -->
-  <div class="section-label" id="section-vacancy">Vacancy Cost Clock</div>
-  <div id="vacancy-clock-grid">
-    <div class="vac-card"><div style="height:80px;background:var(--card-2);border-radius:4px;"></div></div>
-  </div>
+    <!-- At-Risk card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="openDrillDown('at_risk','At-Risk Tenants')">
+        <span class="dch-title">At-Risk Tenants</span>
+        <span class="dch-badge warn" id="dc-risk-badge">—</span>
+        <span class="dch-arrow">›</span>
+      </div>
+      <div class="dc-body">
+        <div id="compact-at-risk" class="compact-list">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+      <div class="dc-footer"><span class="dc-see-all" onclick="openDrillDown('at_risk','At-Risk Tenants')">See all →</span></div>
+    </div>
+
+    <!-- Open Work Orders card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="openDrillDown('overdue_work_orders','Open Work Orders')">
+        <span class="dch-title">Open Work Orders</span>
+        <span class="dch-badge danger" id="dc-wo-badge">—</span>
+        <span class="dch-arrow">›</span>
+      </div>
+      <div class="dc-body">
+        <div id="compact-wo" class="compact-list">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+      <div class="dc-footer"><span class="dc-see-all" id="dc-wo-seeall" onclick="openDrillDown('overdue_work_orders','Open Work Orders')">See all →</span></div>
+    </div>
+
+    <!-- Renewals Requiring Action card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="openDrillDown('renewals','Renewal Pipeline')">
+        <span class="dch-title">Renewals Requiring Action</span>
+        <span class="dch-badge warn" id="dc-ren-badge">—</span>
+        <span class="dch-arrow">›</span>
+      </div>
+      <div class="dc-body">
+        <div id="compact-renewals" class="compact-list">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+      <div class="dc-footer"><span class="dc-see-all" id="dc-ren-seeall" onclick="openDrillDown('renewals','Renewal Pipeline')">See all →</span></div>
+    </div>
+
+    <!-- Lease Expiration Calendar card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="openDrillDown('needs_renewal','Renewals Needing Action')">
+        <span class="dch-title">Lease Expiration Calendar</span>
+        <span class="dch-badge gray" id="dc-cal-badge">—</span>
+        <span class="dch-arrow">›</span>
+      </div>
+      <div class="dc-body">
+        <div id="compact-expiry-cal" class="compact-list" style="padding:4px 0;">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Alerts card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="toggleAlerts()">
+        <span class="dch-title">Active Alerts</span>
+        <span class="alert-count-badge" id="alert-count-badge">—</span>
+        <span class="chevron" id="alerts-chevron">&#9660;</span>
+      </div>
+      <div class="dc-body">
+        <div id="alerts-list" class="open">
+          <div class="empty-state">Loading&hellip;</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vacancy Cost Clock card -->
+    <div class="detail-card" style="grid-column: 1 / -1;">
+      <div class="detail-card-hd" onclick="openDrillDown('vacant_units','Vacant Units — Revenue Lost')">
+        <span class="dch-title">Vacancy Cost Clock</span>
+        <span class="dch-badge danger" id="dc-vac-badge">—</span>
+        <span class="dch-arrow">›</span>
+      </div>
+      <div class="dc-body">
+        <div id="vacancy-clock-grid" class="compact-list">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /detail-card-grid -->
 
 </div><!-- /main -->
 
@@ -241,7 +280,7 @@ function kpiColor(key, val) {
     maint_satisfaction: v => v >= 70 ? 'green' : v >= 60 ? 'yellow' : 'red',
     google_rating:      v => v >= 4.8 ? 'green' : v >= 4.5 ? 'yellow' : 'red',
     expiring_30:        v => v === 0  ? 'green' : v <= 2  ? 'yellow' : 'red',
-    expiring_60:        v => v <= 3   ? 'green' : v <= 6  ? 'yellow' : 'red',
+    expiring_60:        v => v === 0   ? 'green' : v <= 3  ? 'yellow' : 'red',
     expiring_90:        v => v <= 5   ? 'green' : v <= 10 ? 'yellow' : 'red',
     resident_count:     () => 'gray',
     owner_count:        () => 'gray',
@@ -309,12 +348,12 @@ function renderKPIs(d) {
     { key:'expiring_60',  name:'Leases Expiring ≤60 Days',  val: d.expiring_leases?.in_60 ?? null,
       drill:'expiring_60',
       display: d.expiring_leases?.in_60 != null ? d.expiring_leases.in_60 : '—',
-      target:'',
+      target:'Target: 0',
       sub: '' },
     { key:'expiring_90',  name:'Leases Expiring ≤90 Days',  val: d.expiring_leases?.in_90 ?? null,
       drill:'expiring_90',
       display: d.expiring_leases?.in_90 != null ? d.expiring_leases.in_90 : '—',
-      target:'',
+      target:'Target: 0',
       sub: '' },
     { key:'resident_count', name:'Residents',       val: d.resident_count ?? null,
       drill:null,
@@ -370,9 +409,11 @@ function renderZeroGoals(d) {
   }
   setZero('z-delinquent',  'z-del-badge',    d.delinquent_count || 0);
   setZero('z-open-wo',     'z-open-badge',   d.open_work_orders_count || 0);
-  setZero('z-overdue-wo',  'z-overdue-badge', d.overdue_work_orders_count || 0);
+  // overdue_work_orders_count is normalized in backend; fall back to speed_of_repair.overdue_count
+  const overdueCount = d.overdue_work_orders_count || d.speed_of_repair?.overdue_count || 0;
+  setZero('z-overdue-wo',  'z-overdue-badge', overdueCount);
 
-  const vacCount = d.vacant_units_count || 0;
+  const vacCount = d.vacant_units_count || d.vacant_count || 0;
   document.getElementById('z-vacant').textContent = vacCount;
   const vacCard = document.getElementById('z-vacant').closest('.zero-card');
   vacCard.className = 'zero-card ' + (vacCount === 0 ? 'clear' : 'danger');
@@ -384,17 +425,28 @@ function renderZeroGoals(d) {
   lossSub.className = 'zero-sub' + ((vacCount > 0 && totalLoss > 0) ? ' loss' : '');
 }
 
+function _setBadge(id, count, style) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = count;
+  el.className = 'dch-badge ' + (style || (count === 0 ? 'clear' : 'danger'));
+}
+
 // ─────────────────────────────────────────────────────────
 // RENDER: DELINQUENCY — compact cards
 // ─────────────────────────────────────────────────────────
 function renderDelinquency(d) {
   const rows = d.rent_collected?.delinquent_leases || [];
   const el   = document.getElementById('compact-delinquency');
+  _setBadge('dc-del-badge', rows.length, rows.length === 0 ? 'clear' : 'danger');
+  const seeAll = document.getElementById('dc-del-seeall');
+  if (seeAll) seeAll.textContent = rows.length ? 'See all ' + rows.length + ' →' : 'See all →';
   if (!rows.length) {
     el.innerHTML = '<div class="compact-empty">No delinquent leases — all clear ✓</div>';
     return;
   }
-  el.innerHTML = rows.map(r => {
+  const shown = rows.slice(0, 5);
+  el.innerHTML = shown.map(r => {
     const dot = r.days_late > 20 ? 'red' : r.days_late > 7 ? 'yellow' : 'gray';
     const valCls = r.balance > 0 ? 'text-red' : '';
     return `<div class="compact-item" onclick="openDrillDown('rent_collected','Late Rent')">
@@ -415,22 +467,24 @@ function renderDelinquency(d) {
 function renderAtRisk(d) {
   const rows = d.at_risk_tenants || [];
   const el   = document.getElementById('compact-at-risk');
+  _setBadge('dc-risk-badge', rows.length, rows.length === 0 ? 'clear' : 'warn');
   if (!rows.length) {
     el.innerHTML = '<div class="compact-empty">No at-risk tenants flagged ✓</div>';
     return;
   }
-  el.innerHTML = rows.map(r => {
-    const risk   = r.risk_level || 'Medium';
-    const dot    = risk === 'High' ? 'red' : 'yellow';
-    const valCls = risk === 'High' ? 'text-red' : 'text-yellow';
-    const open   = r.currently_open || 0;
-    return `<div class="compact-item" onclick="openDrillDown('overdue_work_orders','Open Work Orders')">
+  const shown = rows.slice(0, 5);
+  el.innerHTML = shown.map(r => {
+    const score  = r.score || 0;
+    const dot    = score >= 3 ? 'red' : 'yellow';
+    const valCls = score >= 3 ? 'text-red' : 'text-yellow';
+    const factors = (r.risk_factors || []).join(' · ') || (r.property || r.unit || '');
+    return `<div class="compact-item" onclick="openDrillDown('at_risk','At-Risk Tenants')">
       <div class="ci-dot ${dot}"></div>
       <div class="ci-body">
         <div class="ci-name">${esc(r.tenant_name)}</div>
-        <div class="ci-sub">${esc(r.property || r.unit || '')}</div>
+        <div class="ci-sub">${esc(trunc(factors, 55))}</div>
       </div>
-      <div class="ci-val ${valCls}">${open} open</div>
+      <div class="ci-val ${valCls}">Score ${score}</div>
       <div class="ci-arrow">›</div>
     </div>`;
   }).join('');
@@ -440,12 +494,13 @@ function renderAtRisk(d) {
 // RENDER: WORK ORDERS — compact cards
 // ─────────────────────────────────────────────────────────
 function renderWOTable(showAll) {
-  const rows = showAll ? allWOs : allWOs.slice(0, 15);
+  const rows = showAll ? allWOs : allWOs.slice(0, 5);
   const el   = document.getElementById('compact-wo');
-  const btn  = document.getElementById('wo-toggle-btn');
-  btn.textContent = showAll ? 'Show less' : 'Show all ' + allWOs.length;
+  const seeAll = document.getElementById('dc-wo-seeall');
+  _setBadge('dc-wo-badge', allWOs.length, allWOs.length === 0 ? 'clear' : 'danger');
+  if (seeAll) seeAll.textContent = allWOs.length ? 'See all ' + allWOs.length + ' →' : 'No open work orders';
 
-  if (!rows.length) {
+  if (!allWOs.length) {
     el.innerHTML = '<div class="compact-empty">No open work orders ✓</div>';
     return;
   }
@@ -476,22 +531,27 @@ function toggleWOTable() {
 // RENDER: RENEWAL PIPELINE — compact cards
 // ─────────────────────────────────────────────────────────
 function renderRenewals(d) {
-  const rows = (d.renewal_rate?.pipeline || []).slice()
+  const all = (d.renewal_rate?.pipeline || []).slice()
     .sort((a, b) => new Date(a.lease_end_date) - new Date(b.lease_end_date));
+  // Show only unsigned/not-yet-acted-upon renewals — signed are done
+  const rows = all.filter(r => r.status !== 'signed' && r.status !== 'lost');
   const el = document.getElementById('compact-renewals');
+  _setBadge('dc-ren-badge', rows.length, rows.length === 0 ? 'clear' : 'warn');
+  const seeAll = document.getElementById('dc-ren-seeall');
+  if (seeAll) seeAll.textContent = all.length ? 'See full pipeline (' + all.length + ') →' : 'See full pipeline →';
 
   if (!rows.length) {
-    el.innerHTML = '<div class="compact-empty">No renewals in pipeline</div>';
+    el.innerHTML = '<div class="compact-empty">All renewals signed or no pipeline yet ✓</div>';
     return;
   }
 
-  el.innerHTML = rows.map(r => {
+  el.innerHTML = rows.slice(0, 5).map(r => {
     const days   = daysFromNow(r.lease_end_date);
     const dot    = days == null ? 'gray' : days <= 0 ? 'red' : days <= 30 ? 'red' : days <= 60 ? 'yellow' : 'green';
     const valCls = days != null && days <= 30 ? 'text-red' : days != null && days <= 60 ? 'text-yellow' : '';
     const daysDisp = days == null ? '—' : days <= 0 ? 'Expired' : days + 'd';
-    const statusBadge = r.status === 'signed' ? ' &nbsp;·&nbsp; <span style="color:#16A34A">Signed</span>'
-      : r.status === 'lost' ? ' &nbsp;·&nbsp; <span style="color:#DC2626">Lost</span>' : '';
+    const statusBadge = r.status === 'contacted' ? ' &nbsp;·&nbsp; <span style="color:#D97706">Contacted</span>'
+      : r.status === 'in_negotiation' ? ' &nbsp;·&nbsp; <span style="color:#2563EB">Negotiating</span>' : '';
     return `<div class="compact-item" onclick="openDrillDown('renewals','Renewal Pipeline')">
       <div class="ci-dot ${dot}"></div>
       <div class="ci-body">
@@ -508,29 +568,23 @@ function renderRenewals(d) {
 // RENDER: LEASE EXPIRATION CALENDAR
 // ─────────────────────────────────────────────────────────
 function renderExpirationCalendar(d) {
-  // Use live Rentvine renewal calendar (lease_date_2 = Renewal Start Date)
-  // Falls back to Supabase lease_expiry_calendar if Rentvine data not yet loaded
   const cal = (d.renewal_calendar && d.renewal_calendar.length) ? d.renewal_calendar : (d.lease_expiry_calendar || []);
-  const isRenewalData = !!(d.renewal_calendar && d.renewal_calendar.length);
   const el  = document.getElementById('compact-expiry-cal');
-
   const needsRenewal = (d.needs_renewal || []).length;
-  const headerHtml = needsRenewal > 0
-    ? `<div class="drawer-note" style="margin:0 0 8px" onclick="openDrillDown('needs_renewal','Needs Renewal Action')" style="cursor:pointer">
-        ⚠ ${needsRenewal} lease${needsRenewal !== 1 ? 's' : ''} expiring within 90 days — no renewal written yet
-       </div>`
-    : '';
+  const shownMonths  = cal.slice(0, 8);
+  const totalExps    = shownMonths.reduce((s, m) => s + (m.count || 0), 0);
+  _setBadge('dc-cal-badge', needsRenewal > 0 ? needsRenewal + ' need action' : totalExps + ' upcoming', needsRenewal > 0 ? 'warn' : 'gray');
 
   if (!cal.length) {
-    el.innerHTML = headerHtml + '<div class="compact-empty">No renewals on record</div>';
+    el.innerHTML = '<div class="compact-empty">No upcoming expirations on record</div>';
     return;
   }
   const maxCount = Math.max(...cal.map(m => m.count));
-  el.innerHTML = headerHtml + cal.map(m => {
+  el.innerHTML = cal.slice(0, 8).map(m => {
     const pct    = Math.max(Math.round((m.count / maxCount) * 100), 4);
     const cls    = m.count >= 6 ? 'red' : m.count >= 3 ? 'yellow' : 'green';
     const valCls = m.count >= 6 ? 'text-red' : m.count >= 3 ? 'text-yellow' : '';
-    return `<div class="expiry-row" style="cursor:pointer" onclick="openExpiryMonth('${esc(m.month_label)}','${esc(m.month_start)}')">
+    return `<div class="expiry-row" style="cursor:pointer;padding:5px 14px;" onclick="openExpiryMonth('${esc(m.month_label)}','${esc(m.month_start)}')">
       <div class="expiry-month">${esc(m.month_label)}</div>
       <div class="expiry-bar-wrap"><div class="expiry-bar ${cls}" style="width:${pct}%"></div></div>
       <div class="expiry-count ${valCls}">${m.count}</div>
@@ -577,21 +631,30 @@ function renderAlerts(data) {
 // ─────────────────────────────────────────────────────────
 function renderVacancyClock(d) {
   const units = d.vacancy_cost_clock || [];
-  const grid  = document.getElementById('vacancy-clock-grid');
+  const el    = document.getElementById('vacancy-clock-grid');
+  _setBadge('dc-vac-badge', units.length, units.length === 0 ? 'clear' : 'danger');
   if (!units.length) {
-    grid.innerHTML = '<div class="card empty-state text-green">No vacant units — full occupancy</div>';
+    el.innerHTML = '<div class="compact-empty">No vacant units — full occupancy ✓</div>';
     return;
   }
-  grid.innerHTML = units.map(u => `
-    <div class="vac-card" onclick="openDrillDown('vacant_units','Vacant Units — Revenue Lost')" style="cursor:pointer">
-      <div class="vac-address">${esc(u.unit_label)}</div>
-      <div class="vac-property">${esc(u.property_name)}</div>
-      <div class="vac-row"><span class="lbl">Days Vacant</span><span>${u.days_vacant} days</span></div>
-      <div class="vac-row"><span class="lbl">Daily Cost</span><span>${u.daily_cost > 0 ? fmt$(u.daily_cost) + '/day' : '—'}</span></div>
-      ${u.move_in_date ? `<div class="vac-row"><span class="lbl">Move-in</span><span class="text-green">${fmtDate(u.move_in_date)}</span></div>` : ''}
-      <div class="vac-loss">${u.total_loss > 0 ? fmt$(u.total_loss) + ' lost' : 'Cost pending'}</div>
-    </div>
-  `).join('');
+  el.innerHTML = units.map(u => {
+    const critical = u.days_vacant > 30;
+    const dot      = critical ? 'red' : u.days_vacant > 14 ? 'yellow' : 'green';
+    const valCls   = critical ? 'text-red' : u.days_vacant > 14 ? 'text-yellow' : '';
+    const parts    = [u.unit_label, u.property_name].filter(Boolean);
+    const nameLine = parts.join(' — ');
+    const lossStr  = u.total_loss > 0 ? fmt$(u.total_loss) + ' lost' : '';
+    const subLine  = [u.days_vacant + ' days vacant', lossStr].filter(Boolean).join(' · ');
+    return `<div class="compact-item" onclick="openDrillDown('vacant_units','Vacant Units — Revenue Lost')">
+      <div class="ci-dot ${dot}"></div>
+      <div class="ci-body">
+        <div class="ci-name">${esc(nameLine)}</div>
+        <div class="ci-sub">${esc(subLine)}</div>
+      </div>
+      <div class="ci-val ${valCls}">${u.daily_cost > 0 ? fmt$(u.daily_cost) + '/day' : '—'}</div>
+      <div class="ci-arrow">›</div>
+    </div>`;
+  }).join('');
 }
 
 // ─────────────────────────────────────────────────────────
@@ -692,6 +755,7 @@ async function loadAll(manual) {
       fetch('/api/briefing'),
     ]);
 
+    if (kpisRes.status === 401) { window.location.href = '/auth/login'; return; }
     if (!kpisRes.ok) throw new Error('KPI endpoint ' + kpisRes.status);
 
     const [kpis, alertsData, briefingData] = await Promise.all([
@@ -919,16 +983,17 @@ function renderDrawer(section, data) {
       unassigned  ? dstat(unassigned,  'Unassigned',        'red', 'red') : ''
     );
     body.innerHTML = statsHtml + `<div class="table-wrap"><table>
-      <thead><tr><th>WO #</th><th>Description</th><th>Property</th><th>Age</th><th>Vendor</th></tr></thead>
+      <thead><tr><th>WO #</th><th>Description</th><th>Property</th><th>Priority</th><th>Vendor</th></tr></thead>
       <tbody>${rows.map(r => {
         const critical = r.days_open > 14;
         const overdue  = r.days_open > 3;
         const cls      = critical ? 'badge-red' : overdue ? 'badge-yellow' : 'badge-gray';
+        const priLabel = r.priority || (critical ? 'High' : overdue ? 'Medium' : 'Low');
         return `<tr class="${critical ? 'tr-critical' : overdue ? 'tr-overdue' : ''}">
           <td class="font-mono text-muted">#${esc(r.wo_id)}</td>
           <td style="max-width:200px" class="truncate" title="${esc(r.description)}">${esc(trunc(r.description,55))}</td>
           <td class="text-muted" style="max-width:140px">${esc(trunc(r.property_name||'',30))}</td>
-          <td><span class="badge ${cls}">${r.days_open}d</span></td>
+          <td><span class="badge ${cls}">${esc(priLabel)}</span></td>
           <td>${r.vendor && r.vendor !== 'Unassigned' ? `<span class="badge badge-blue">${esc(trunc(r.vendor,20))}</span>` : '<span class="badge badge-gray">Unassigned</span>'}</td>
         </tr>`;
       }).join('')}</tbody>
@@ -1042,71 +1107,127 @@ function renderDrawer(section, data) {
 
     // Build monthly bar chart (SVG)
     function renewalChart(months, pipe) {
+      // Last 12 historical + next 6 upcoming = max 18 bars
+      const histSlice = months.slice(-12);
+      const futSlice  = pipe.slice(0, 6);
       const allBars = [
-        ...months.map(m => ({ ...m, future: false })),
-        ...pipe.map(p => ({ ...p, renewals: 0, total_eligible: p.expirations, rate_pct: null, future: true })),
+        ...histSlice.map(m => ({ ...m, future: false })),
+        ...futSlice.map(p => ({ ...p, renewals: 0, total_eligible: p.expirations, rate_pct: null, future: true })),
       ];
       window._renewalBarData = allBars;
       if (!allBars.length) return '';
-      const W = 560, H = 160, PAD_B = 28, PAD_T = 10, PAD_L = 32;
-      const chartH = H - PAD_B - PAD_T;
-      const barW   = Math.max(14, Math.floor((W - PAD_L) / allBars.length) - 3);
-      const gap    = Math.floor((W - PAD_L - barW * allBars.length) / (allBars.length + 1));
+
+      const now = new Date();
+      const currKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+      const BAR_W = 34, GAP = 7, PAD_L = 38, PAD_R = 10, PAD_T = 12, PAD_B = 34;
+      const chartH = 120;
+      const W = PAD_L + allBars.length * (BAR_W + GAP) - GAP + PAD_R;
+      const H = chartH + PAD_T + PAD_B;
 
       const lines = [75, 90].map(pctLine => {
         const y = PAD_T + chartH - (pctLine / 100) * chartH;
-        return `<line x1="${PAD_L}" y1="${y}" x2="${W}" y2="${y}" stroke="var(--border)" stroke-dasharray="3,3"/>
-                <text x="${PAD_L - 3}" y="${y + 4}" text-anchor="end" font-size="9" fill="var(--muted)">${pctLine}%</text>`;
+        return `<line x1="${PAD_L}" y1="${y}" x2="${W - PAD_R}" y2="${y}" stroke="var(--border)" stroke-dasharray="3,3"/>
+                <text x="${PAD_L - 5}" y="${y + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${pctLine}%</text>`;
       }).join('');
 
+      // Label every other bar; if many bars, every third
+      const labelStep = allBars.length > 14 ? 3 : 2;
+
       const bars = allBars.map((m, i) => {
-        const x    = PAD_L + gap + i * (barW + gap);
+        const x    = PAD_L + i * (BAR_W + GAP);
         const rate = m.rate_pct;
-        const fill = m.future ? 'var(--border)'
-                   : rate == null ? 'var(--muted)'
+        const isCurr = (m.month_key || '') === currKey;
+        const fill = m.future ? '#E5E7EB'
+                   : rate == null ? '#D1D5DB'
                    : rate >= 90  ? 'var(--green)'
                    : rate >= 75  ? 'var(--amber)'
                    : 'var(--red)';
-        const barPct  = m.future ? Math.min((m.expirations || 0) / 10 * 100, 100) : (rate ?? 0);
-        const barH    = Math.max(2, Math.round((barPct / 100) * chartH));
-        const y       = PAD_T + chartH - barH;
-        const lbl     = (m.month_label || m.month_key || '').replace(/ \d{4}$/, '');
+        const barPct = m.future ? Math.min((m.expirations || 0) / 10 * 100, 100) : (rate ?? 0);
+        const barH   = Math.max(3, Math.round((barPct / 100) * chartH));
+        const y      = PAD_T + chartH - barH;
+        const lbl    = (isCurr || i % labelStep === 0)
+          ? (m.month_label || m.month_key || '').replace(/ \d{4}$/, '') : '';
         const tooltip = m.future
           ? `${m.month_label}: ${m.expirations} upcoming`
-          : `${m.month_label}: ${rate != null ? rate + '%' : 'n/a'} (${m.renewals} renewed / ${m.total_eligible - m.renewals} vacated)`;
+          : `${m.month_label}: ${rate != null ? rate + '%' : 'n/a'} (${m.renewals || 0} renewed / ${(m.total_eligible || 0) - (m.renewals || 0)} vacated)`;
+        const highlight = isCurr
+          ? `<rect x="${x}" y="${PAD_T}" width="${BAR_W}" height="${chartH}" fill="#FF7417" rx="3" opacity="0.07"/>` : '';
+        const outline = isCurr ? ` stroke="#FF7417" stroke-width="2.5"` : '';
+        const nowTag  = isCurr ? `<text x="${x + BAR_W / 2}" y="${y - 5}" text-anchor="middle" font-size="9" fill="#FF7417" font-weight="700">NOW</text>` : '';
         return `<g onclick="handleRenewalBarClick(${i})" style="cursor:pointer">
-          <rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="${fill}" rx="2">
+          ${highlight}
+          <rect x="${x}" y="${y}" width="${BAR_W}" height="${barH}" fill="${fill}" rx="3"${outline}>
             <title>${tooltip}</title>
           </rect>
-          <text x="${x + barW/2}" y="${H - 5}" text-anchor="middle" font-size="8" fill="var(--muted)">${lbl}</text>
+          ${nowTag}
+          ${lbl ? `<text x="${x + BAR_W / 2}" y="${H - 6}" text-anchor="middle" font-size="10" fill="${isCurr ? '#FF7417' : 'var(--muted)'}" font-weight="${isCurr ? '700' : '400'}">${lbl}</text>` : ''}
         </g>`;
       }).join('');
 
-      const dividerIdx = months.length;
-      const divX = dividerIdx > 0
-        ? PAD_L + gap + dividerIdx * (barW + gap) - gap / 2
-        : null;
+      const dividerIdx = histSlice.length;
+      const divX = dividerIdx > 0 && futSlice.length > 0
+        ? PAD_L + dividerIdx * (BAR_W + GAP) - GAP / 2 - 1 : null;
       const divider = divX
-        ? `<line x1="${divX}" y1="${PAD_T}" x2="${divX}" y2="${PAD_T + chartH}" stroke="var(--muted)" stroke-dasharray="4,3" opacity="0.5"/>
-           <text x="${divX + 3}" y="${PAD_T + 10}" font-size="8" fill="var(--muted)">upcoming</text>`
+        ? `<line x1="${divX}" y1="${PAD_T}" x2="${divX}" y2="${PAD_T + chartH}" stroke="var(--muted)" stroke-dasharray="4,3" opacity="0.4"/>
+           <text x="${divX + 4}" y="${PAD_T + 12}" font-size="9" fill="var(--muted)">upcoming</text>`
         : '';
 
       return `<div style="overflow-x:auto;margin-bottom:16px">
-        <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="max-width:100%;display:block">
+        <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:${Math.min(W, 340)}px;max-width:${W}px">
           ${lines}${bars}${divider}
           <line x1="${PAD_L}" y1="${PAD_T}" x2="${PAD_L}" y2="${PAD_T + chartH}" stroke="var(--border)"/>
-          <line x1="${PAD_L}" y1="${PAD_T + chartH}" x2="${W}" y2="${PAD_T + chartH}" stroke="var(--border)"/>
+          <line x1="${PAD_L}" y1="${PAD_T + chartH}" x2="${W - PAD_R}" y2="${PAD_T + chartH}" stroke="var(--border)"/>
         </svg>
       </div>`;
     }
 
+    // Rolling 12-month rate: sum(renewals) / sum(total_eligible) over last 12 historical months
+    const hist12   = monthly.filter(m => m.rate_pct != null).slice(-12);
+    const r12ren   = hist12.reduce((s, m) => s + (m.renewals || 0), 0);
+    const r12tot   = hist12.reduce((s, m) => s + (m.total_eligible || 0), 0);
+    const roll12   = r12tot > 0 ? Math.round(r12ren / r12tot * 100) : null;
+    const r12Color = roll12 == null ? '' : roll12 >= 90 ? 'green' : roll12 >= 75 ? 'yellow' : 'red';
+
+    const statusBadge = p => {
+      if (p == null) return '';
+      const cls = p >= 90 ? 'badge-green' : p >= 75 ? 'badge-yellow' : 'badge-red';
+      const lbl = p >= 90 ? 'On Target' : 'Needs Attention';
+      return `<span class="badge ${cls}">${lbl}</span>`;
+    };
+    const colorVar = c => c ? `var(--${c})` : 'var(--fg)';
     body.innerHTML = renewalChart(monthly, pipeline)
-      + dstats(
-          dstat(pct != null ? pct + '%' : '—', 'Current Month Rate',      pctColor, pctColor),
-          dstat(renewed, 'Renewals Written',  'green', 'green'),
-          dstat(pending, 'Not Yet Written',   pending > 0 ? 'yellow' : '', pending > 0 ? 'yellow' : ''),
-          dstat(total,   'Tracked This Period', '', '')
-        )
+      + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:16px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">THIS MONTH</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+              <span style="font-size:36px;font-weight:800;line-height:1;color:${colorVar(pctColor)}">${pct != null ? pct + '%' : '—'}</span>
+              ${statusBadge(pct)}
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:13px">
+                <span style="color:var(--muted)">Renewals written</span>
+                <span style="font-weight:700;color:var(--green)">${renewed}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px">
+                <span style="color:var(--muted)">Not yet written</span>
+                <span style="font-weight:700;${pending > 0 ? 'color:var(--amber)' : ''}">${pending}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;border-top:1px solid var(--border);margin-top:4px;padding-top:5px">
+                <span style="color:var(--muted)">Tracked this period</span>
+                <span style="font-weight:700">${total}</span>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:16px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">ROLLING 12-MONTH AVG</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+              <span style="font-size:36px;font-weight:800;line-height:1;color:${colorVar(r12Color)}">${roll12 != null ? roll12 + '%' : '—'}</span>
+              ${statusBadge(roll12)}
+            </div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.6">Average renewal rate across the last 12 completed months${r12tot > 0 ? ' (' + r12tot + ' total eligible)' : ''}.</div>
+          </div>
+        </div>`
       + `<div class="drawer-note">Monthly rate = leases that started this month where tenant has been there 180+ days (renewals written) ÷ leases that expired or gave notice last month. Chart shows last 24 months; gray bars = upcoming expirations.</div>`
       + (rows.length ? `<div class="table-wrap"><table>
         <thead><tr><th>Tenant</th><th>Unit</th><th>Renewal Date</th><th>Rent</th><th>Renewal Written?</th></tr></thead>
@@ -1137,12 +1258,14 @@ function renderDrawer(section, data) {
     const signed     = rows.filter(r => r.status === 'signed').length;
     const notSigned  = rows.length - signed;
     const rentAtRisk = rows.filter(r => r.status !== 'signed').reduce((s,r) => s + (r.monthly_rent||0), 0);
+    const goalMet = notSigned === 0;
     body.innerHTML = dstats(
       dstat(rows.length, `Expiring ${rangeLabel}`, notSigned > 0 ? 'yellow' : 'green', notSigned > 0 ? 'yellow' : 'green'),
       dstat(signed,    'Signed',    'green', 'green'),
       dstat(notSigned, 'Unsigned',  notSigned > 0 ? 'red' : '', notSigned > 0 ? 'red' : ''),
       dstat(fmt$(rentAtRisk) + '/mo', 'Rent at Risk', rentAtRisk > 0 ? 'red' : '', rentAtRisk > 0 ? 'red' : '')
-    ) + `<div class="table-wrap"><table>
+    ) + `<div class="drawer-note" style="margin-bottom:12px">Goal: 0 leases expiring without a signed renewal — ${goalMet ? '✓ On Target' : notSigned + ' still unsigned, needs attention'}</div>`
+    + `<div class="table-wrap"><table>
         <thead><tr><th>Tenant</th><th>Unit</th><th>Lease Ends</th><th>Days Left</th><th>Rent/Mo</th><th>Status</th></tr></thead>
         <tbody>${rows.map(r => {
           const days = daysFromNow(r.lease_end_date);
@@ -1268,6 +1391,39 @@ function renderDrawer(section, data) {
       dstat(vac,                             'Vacated / Gave Notice',   vac > 0 ? 'red' : '', vac > 0 ? 'red' : ''),
       dstat(total,                           'Total Eligible',          '', '')
     ) + `<div class="drawer-note">Historical snapshot — individual lease records for past months are not stored.</div>`;
+    return;
+  }
+
+  if (section === 'at_risk') {
+    const rows = data.records || [];
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No at-risk tenants flagged ✓</div>'; return; }
+    const highRisk = rows.filter(r => (r.risk_level || '').toUpperCase() === 'HIGH' || r.score >= 4).length;
+    const medRisk  = rows.filter(r => (r.risk_level || '').toUpperCase() === 'MEDIUM' || (r.score >= 2 && r.score < 4)).length;
+    body.innerHTML = dstats(
+      dstat(rows.length,  rows.length === 1 ? 'At-Risk Tenant' : 'At-Risk Tenants', rows.length > 0 ? 'yellow' : '', rows.length > 0 ? 'yellow' : ''),
+      highRisk ? dstat(highRisk, 'High Risk', 'red',    'red')    : '',
+      medRisk  ? dstat(medRisk,  'Medium Risk', 'yellow', 'yellow') : ''
+    ) + `<div class="table-wrap"><table>
+      <thead><tr><th>Tenant</th><th>Property</th><th>Risk Level</th><th>Open WOs</th></tr></thead>
+      <tbody>${rows.map(r => {
+        const lvl      = (r.risk_level || (r.score >= 4 ? 'High' : 'Medium')).toUpperCase();
+        const isHigh   = lvl === 'HIGH';
+        const badge    = isHigh ? 'badge-red' : 'badge-yellow';
+        const propName = r.property || [r.unit, r.property_name].filter(Boolean).join(' — ') || '—';
+        const openWOs  = r.currently_open ?? r.open_wo_count ?? '—';
+        const factors  = (r.risk_factors || []).join(' · ');
+        const sub      = factors ? `<div class="text-muted" style="font-size:11px">${esc(trunc(factors,55))}</div>` : '';
+        return `<tr>
+          <td>${esc(r.tenant_name || '—')}${sub}</td>
+          <td class="text-muted font-mono" style="max-width:160px">${esc(trunc(propName, 40))}</td>
+          <td><span class="badge ${badge}">${lvl}</span></td>
+          <td class="font-mono ${openWOs > 0 ? 'text-yellow' : ''}">${openWOs}</td>
+        </tr>`;
+      }).join('')}</tbody>
+      <tfoot><tr style="border-top:2px solid var(--border);font-weight:700">
+        <td colspan="4" style="color:var(--muted)">${rows.length} tenant${rows.length !== 1 ? 's' : ''} flagged — based on open maintenance history</td>
+      </tr></tfoot>
+    </table></div>`;
     return;
   }
 

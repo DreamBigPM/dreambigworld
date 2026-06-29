@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 COOKIE_NAME = "dbpm_session"
 COOKIE_MAX_AGE = 28800  # 8 hours
 ALLOWED_DOMAIN = "dreambigpm.com"
-SCOPES = ["openid", "profile", "email", "User.Read"]
+SCOPES = ["User.Read", "email"]
 
 _signer: Optional[URLSafeTimedSerializer] = None
 

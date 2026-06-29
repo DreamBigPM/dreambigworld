@@ -596,10 +596,25 @@ async def api_drill(
         })
 
     if section in ("renewals", "expiring_30", "expiring_60", "expiring_90"):
-        return JSONResponse({
-            "section": section,
-            "records": data.get("renewal_rate", {}).get("pipeline", []),
-        })
+        # Use full Rentvine renewal records (all active/MTM leases) instead of
+        # sparse SQLite pipeline — gives accurate 30/60/90-day expiry counts.
+        recs = [dict(r) for r in data.get("renewal_records", [])]
+        try:
+            sqlite_map = {str(r["lease_id"]): r for r in database.get_renewal_pipeline()}
+            for r in recs:
+                lid = str(r.get("lease_id", ""))
+                if lid in sqlite_map:
+                    r["status"] = sqlite_map[lid].get("status", "not_started")
+                    r["notes"]  = sqlite_map[lid].get("notes")
+                r.setdefault("status", "not_started")
+                # Map field names the frontend expects
+                if "lease_end_date" not in r:
+                    r["lease_end_date"] = r.get("end_date", "")
+                if "monthly_rent" not in r:
+                    r["monthly_rent"] = r.get("current_rent", 0) or r.get("renewal_rent", 0) or 0
+        except Exception as e:
+            logger.warning(f"Expiry drill status merge failed: {e}")
+        return JSONResponse({"section": section, "records": recs})
 
     if section == "rent_collected":
         rc = data.get("rent_collected", {})
@@ -795,61 +810,91 @@ async def api_drill(
                     genuine_vac_ids.add(lid)
 
             total = renewed + follow_on_renewed + len(genuine_vac_ids)
+            current_rate = round((renewed + follow_on_renewed) / total * 100, 1) if total > 0 else None
 
-            # Upcoming renewal pipeline — same formula as the rate:
-            # a lease is eligible for renewal when (renewal_start - move_in_date) > 180 days.
-            # For active leases the renewal_start = day after end_date (first of following month).
-            # For NTV leases use expected_moveout_date + 1 day as the renewal_start anchor.
-            six_mo_iso = (today + timedelta(days=180)).isoformat()
-            pipe_resp = client.table("leases") \
+            # Inject current month into the historical chart if it's missing (month isn't closed yet)
+            try:
+                curr_key = today.strftime("%Y-%m")
+                if not any(m.get("month_key") == curr_key for m in monthly_chart):
+                    if current_rate is not None:
+                        monthly_chart.append({
+                            "month_key": curr_key,
+                            "month_label": today.strftime("%b %Y"),
+                            "rate_pct": current_rate,
+                            "renewals": renewed + follow_on_renewed,
+                            "total_eligible": total,
+                        })
+                        monthly_chart.sort(key=lambda m: m.get("month_key", ""))
+            except Exception:
+                pass
+
+            # Upcoming renewal pipeline — shows TOTAL renewals per month, both
+            # already-signed and not yet signed, so the bars stay stable as
+            # tenants renew. A lease is eligible when tenure > 180 days at
+            # renewal_start. Priority: emd → ied → end_date.
+            six_mo_iso   = (today + timedelta(days=180)).isoformat()
+            lookback_iso = (today - timedelta(days=45)).isoformat()
+
+            def _first_after(d: str) -> "_date":
+                dt = _date.fromisoformat(d)
+                return _date(dt.year + 1, 1, 1) if dt.month == 12 else _date(dt.year, dt.month + 1, 1)
+
+            def _pipe_rs(row, min_dt):
+                ed = row.get("end_date"); ied = row.get("increase_eligibility_date")
+                emd = row.get("expected_moveout_date")
+                rs = None
+                if emd:
+                    c = _first_after(emd)
+                    if c >= min_dt and c.isoformat() <= six_mo_iso: rs = c
+                if rs is None and ied:
+                    c = _date.fromisoformat(ied).replace(day=1)
+                    if c >= min_dt and c.isoformat() <= six_mo_iso: rs = c
+                if rs is None and ed:
+                    c = _first_after(ed)
+                    if c >= min_dt and c.isoformat() <= six_mo_iso: rs = c
+                return rs
+
+            pipe_active = client.table("leases") \
                 .select("end_date,increase_eligibility_date,expected_moveout_date,move_in_date,unit_id") \
                 .in_("status", ["Active", "Month-to-Month", "Pending"]) \
                 .in_("unit_id", active_unit_ids) \
                 .execute()
+
+            # Recently-closed leases — may have already renewed; include them if
+            # the unit has an active follow-on lease (= renewal happened).
+            pipe_closed = client.table("leases") \
+                .select("end_date,increase_eligibility_date,expected_moveout_date,move_in_date,unit_id") \
+                .eq("status", "Closed") \
+                .gte("end_date", lookback_iso) \
+                .lte("end_date", six_mo_iso) \
+                .in_("unit_id", active_unit_ids) \
+                .execute()
+
+            active_units_now = {r["unit_id"] for r in (pipe_active.data or []) if r.get("unit_id")}
             counts: dict = defaultdict(int)
-            seen_units: set = set()
-            for row in (pipe_resp.data or []):
-                uid     = row.get("unit_id")
-                ed      = row.get("end_date")
-                ied     = row.get("increase_eligibility_date")
-                emd     = row.get("expected_moveout_date")
-                move_in = row.get("move_in_date")
-                if not move_in:
-                    continue
+            seen_per_month: dict = defaultdict(set)
 
-                # Pipeline renewal_start priority:
-                #  1. expected_moveout_date  — tenant gave NTV; use it (first of month after)
-                #  2. increase_eligibility_date — Rentvine's renewal month (use directly)
-                #  3. end_date — fallback when ied is absent or far-future (first of month after)
-                # Compute all candidates, pick the earliest that is within the 6-month window.
-                def _first_after(d: str) -> "_date":
-                    dt = _date.fromisoformat(d)
-                    return _date(dt.year + 1, 1, 1) if dt.month == 12 else _date(dt.year, dt.month + 1, 1)
+            for row in (pipe_active.data or []):
+                uid = row.get("unit_id"); move_in = row.get("move_in_date")
+                if not move_in: continue
+                rs = _pipe_rs(row, today)
+                if rs is None: continue
+                if (rs - _date.fromisoformat(move_in)).days <= 180: continue
+                mk = rs.strftime("%Y-%m")
+                if uid in seen_per_month[mk]: continue
+                seen_per_month[mk].add(uid); counts[mk] += 1
 
-                renewal_start = None
-                if emd:
-                    c = _first_after(emd)
-                    if today <= c and c.isoformat() <= six_mo_iso:
-                        renewal_start = c
-                if renewal_start is None and ied:
-                    c = _date.fromisoformat(ied).replace(day=1)
-                    if today <= c and c.isoformat() <= six_mo_iso:
-                        renewal_start = c
-                if renewal_start is None and ed:
-                    c = _first_after(ed)
-                    if today <= c and c.isoformat() <= six_mo_iso:
-                        renewal_start = c
-                if renewal_start is None:
-                    continue
-                # Apply the same eligibility rule: tenure > 180 days at renewal time
-                tenure = (renewal_start - _date.fromisoformat(move_in)).days
-                if tenure <= 180:
-                    continue
-                if uid and uid in seen_units:
-                    continue
-                if uid:
-                    seen_units.add(uid)
-                counts[renewal_start.strftime("%Y-%m")] += 1
+            for row in (pipe_closed.data or []):
+                uid = row.get("unit_id"); move_in = row.get("move_in_date")
+                if not uid or not move_in: continue
+                if uid not in active_units_now: continue  # genuine vacate, not a renewal
+                rs = _pipe_rs(row, today)
+                if rs is None: continue
+                if (rs - _date.fromisoformat(move_in)).days <= 180: continue
+                mk = rs.strftime("%Y-%m")
+                if uid in seen_per_month[mk]: continue
+                seen_per_month[mk].add(uid); counts[mk] += 1
+
             pipeline = [
                 {"month_key": k, "expirations": v,
                  "month_label": _date.fromisoformat(k + "-01").strftime("%b %Y")}
