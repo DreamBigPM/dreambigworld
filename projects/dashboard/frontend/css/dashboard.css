@@ -215,7 +215,7 @@ body {
 }
 
 /* ── KPI SCORECARD GRID ─────────────────────────────────── */
-#kpi-grid {
+#kpi-grid, .kpi-grid {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -598,6 +598,9 @@ tr:hover td { background: #F7F8FA; }
 }
 #drawer-body table { min-width: 0; }
 #drawer-body th, #drawer-body td { padding: 8px 8px; }
+.fin-detail-table { width:100%; border-collapse:collapse; font-size:13px; min-width:0; }
+.fin-detail-table td { padding:3px 0; border-bottom:none; background:none !important; }
+.fin-detail-table tr.fin-total td { padding:5px 0; border-top:1px solid #e5e7eb; }
 .drawer-loading { text-align: center; padding: 40px; color: #8A9099; font-size: 13px; font-family: var(--font); }
 .drawer-empty   { text-align: center; padding: 40px; color: #16A34A; font-size: 13px; font-family: var(--font); }
 /* ── DRAWER STAT BOXES ───────────────────────────────────── */

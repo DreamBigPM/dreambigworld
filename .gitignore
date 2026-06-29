@@ -11,4 +11,5 @@ projects/dashboard/backend/*.db
 projects/dashboard/backend/*.db-shm
 projects/dashboard/backend/*.db-wal
 projects/dashboard/.env
+projects/dashboard/google-service-account.json
 .env

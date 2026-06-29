@@ -18,13 +18,14 @@ from dotenv import load_dotenv
 _DASHBOARD_DIR = Path(__file__).parent.parent
 load_dotenv(_DASHBOARD_DIR / ".env")
 
-from fastapi import FastAPI, Depends, Request, HTTPException
+from fastapi import FastAPI, Depends, Request, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from backend import database, kpi, briefing, auth, supabase_kpi
+from backend import sheets as _sheets
 
 logging.basicConfig(
     level=logging.INFO,
@@ -39,6 +40,10 @@ scheduler = AsyncIOScheduler()
 _kpi_cache: dict = {}
 _kpi_cache_time: datetime = None
 _CACHE_TTL_MINUTES = 15
+
+# Churn data cache (15-min TTL, same pattern as KPI cache)
+_churn_cache: dict = {}
+_churn_cache_time: datetime = None
 
 
 @asynccontextmanager
@@ -448,9 +453,25 @@ async def auth_me(user: dict = Depends(auth.get_current_user)):
 
 # ── API routes ─────────────────────────────────────────────────────────────────
 
+def _inject_qb_metrics(data: dict) -> dict:
+    """Attach qb_metrics from the latest P&L upload (DB-based). Never raises."""
+    try:
+        import json as _json
+        fin = database.get_latest_financial_upload()
+        if fin and fin.get("metrics_json"):
+            data["qb_metrics"] = _json.loads(fin["metrics_json"])
+        else:
+            data["qb_metrics"] = None
+    except Exception as e:
+        logger.warning(f"QB metrics (non-fatal): {e}")
+        data["qb_metrics"] = None
+    return data
+
+
 @app.get("/api/kpis")
 async def api_kpis(user: dict = Depends(auth.get_current_user)):
     data = await _get_kpis_cached()
+    data = _inject_qb_metrics(dict(data))
     return JSONResponse(_filter_kpis_by_role(data, user))
 
 
@@ -462,7 +483,9 @@ async def api_refresh(user: dict = Depends(auth.get_current_user)):
         _kpi_cache = data
         _kpi_cache_time = datetime.utcnow()
     database.clear_todays_briefings()
-    return JSONResponse(_filter_kpis_by_role(_kpi_cache or {}, user))
+    result = dict(_kpi_cache or {})
+    result = _inject_qb_metrics(result)
+    return JSONResponse(_filter_kpis_by_role(result, user))
 
 
 @app.get("/api/briefing")
@@ -909,6 +932,151 @@ async def api_drill(
         })
 
     raise HTTPException(status_code=404, detail=f"Unknown drill section: {section}")
+
+
+# ── Churn helpers ──────────────────────────────────────────────────────────────
+
+async def _get_churn_cached() -> dict:
+    """Return churn summary, using a 15-minute in-memory cache."""
+    global _churn_cache, _churn_cache_time
+    now = datetime.utcnow()
+    if (
+        _churn_cache
+        and _churn_cache_time
+        and (now - _churn_cache_time).total_seconds() < _CACHE_TTL_MINUTES * 60
+    ):
+        return _churn_cache
+
+    connected = _sheets.is_sheets_connected()
+    if not connected:
+        return {"connected": False, "current_churn_pct": None, "history": []}
+
+    rows    = _sheets.read_churn_sheet()
+    summary = _sheets.compute_churn_summary(rows)
+
+    # Prefer the sheet's own YTD summary over our computed values —
+    # the sheet has nuance (reactive doors, etc.) we can't infer from events alone
+    ytd = _sheets._read_ytd_summary_xlsx()
+    if ytd:
+        summary["current_adds"]       = ytd["adds"]
+        summary["current_offboards"]  = ytd["offboards"]
+        summary["current_churn_pct"]  = ytd["churn_pct"]
+
+    result  = {"connected": True, **summary}
+
+    _churn_cache      = result
+    _churn_cache_time = now
+    return result
+
+
+def _invalidate_churn_cache():
+    global _churn_cache, _churn_cache_time
+    _churn_cache      = {}
+    _churn_cache_time = None
+
+
+# ── Churn routes ───────────────────────────────────────────────────────────────
+
+@app.get("/api/churn")
+async def api_churn(user: dict = Depends(auth.get_current_user)):
+    data = await _get_churn_cached()
+    return JSONResponse(data)
+
+
+@app.post("/api/churn/event")
+async def api_churn_event(
+    request: Request,
+    user: dict = Depends(auth.get_current_user),
+):
+    if user.get("role") not in ("admin", "operations"):
+        raise HTTPException(status_code=403, detail="Admin or operations role required")
+
+    body = await request.json()
+    event_date    = body.get("event_date", "")
+    property_name = body.get("property_name", "")
+    event_type    = body.get("event_type", "")
+
+    if not event_date or not property_name:
+        raise HTTPException(status_code=400, detail="event_date and property_name are required")
+    if event_type not in ("add", "offboard"):
+        raise HTTPException(status_code=400, detail="event_type must be 'add' or 'offboard'")
+
+    ok = _sheets.append_door_event(event_date, property_name, event_type)
+    if not ok:
+        raise HTTPException(status_code=500, detail="Failed to write to Google Sheet")
+
+    _invalidate_churn_cache()
+    return JSONResponse({"created": True})
+
+
+# ── Financial P&L upload routes ────────────────────────────────────────────────
+
+@app.post("/api/financials/upload")
+async def api_financials_upload(
+    user: dict = Depends(auth.get_current_user),
+    file: UploadFile = File(...),
+):
+    """Upload a QuickBooks P&L PDF. Admin only. Parses and stores NARPM metrics."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="Empty file uploaded")
+
+    from backend import pl_parser
+    parsed = pl_parser.parse_pl_pdf(file_bytes)
+    if parsed.get("error"):
+        return JSONResponse({"error": parsed["error"]}, status_code=400)
+
+    door_count = _kpi_cache.get("occupancy", {}).get("total") or 119
+    metrics    = pl_parser.compute_narpm_metrics(parsed, door_count)
+
+    database.save_financial_upload(
+        period=parsed["period"],
+        parsed=parsed,
+        metrics=metrics,
+        door_count=door_count,
+    )
+
+    return JSONResponse({
+        "connected":   True,
+        "period":      parsed["period"],
+        "uploaded_at": None,   # just uploaded; caller can re-fetch /api/financials
+        "metrics":     metrics,
+    })
+
+
+@app.get("/api/financials/history")
+async def api_financials_history(user: dict = Depends(auth.get_current_user)):
+    """Return all P&L uploads, one per period (latest wins), sorted oldest→newest."""
+    import json as _json
+    rows = database.get_financial_history()
+    months = []
+    for row in rows:
+        if row.get("metrics_json"):
+            months.append({
+                "period":      row["period"],
+                "uploaded_at": row["uploaded_at"],
+                "metrics":     _json.loads(row["metrics_json"]),
+            })
+    return JSONResponse({"months": months})
+
+
+@app.get("/api/financials")
+async def api_financials(user: dict = Depends(auth.get_current_user)):
+    """Return the most recent P&L upload, or {connected:false} if none exists."""
+    import json as _json
+    fin = database.get_latest_financial_upload()
+    if not fin or not fin.get("metrics_json"):
+        return JSONResponse({"connected": False, "period": None, "metrics": None})
+
+    return JSONResponse({
+        "connected":   True,
+        "period":      fin.get("period"),
+        "uploaded_at": fin.get("uploaded_at"),
+        "metrics":     _json.loads(fin["metrics_json"]),
+    })
 
 
 @app.get("/api/users")

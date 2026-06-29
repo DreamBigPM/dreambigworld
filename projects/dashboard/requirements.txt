@@ -7,3 +7,10 @@ msal
 python-jose[cryptography]
 itsdangerous
 apscheduler
+# Google Sheets integration (Churn Tracker)
+google-auth
+google-api-python-client
+# P&L PDF parsing
+pdfplumber
+# File upload support (required for UploadFile in FastAPI)
+python-multipart

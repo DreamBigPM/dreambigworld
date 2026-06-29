@@ -180,6 +180,21 @@ CREATE TABLE IF NOT EXISTS raw_kpi_data (
 );
 """
 
+_CREATE_FINANCIAL_UPLOADS = """
+CREATE TABLE IF NOT EXISTS financial_uploads (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    period         TEXT,
+    uploaded_at    TEXT,
+    gross_revenue  REAL,
+    direct_labor   REAL,
+    mgmt_labor     REAL,
+    total_expenses REAL,
+    net_income     REAL,
+    door_count     INTEGER,
+    metrics_json   TEXT
+);
+"""
+
 _SEED_THRESHOLDS = """
 INSERT OR IGNORE INTO threshold_config (metric_name, warning_value, critical_value, direction, unit) VALUES
 ('rent_collected_pct',       93.0, 90.0, 'below', 'pct'),
@@ -215,6 +230,7 @@ def init_db() -> None:
         conn.execute(_CREATE_ROLE_BRIEFINGS)
         conn.execute(_CREATE_PORTFOLIO_HISTORY)
         conn.execute(_CREATE_RAW_KPI_DATA)
+        conn.execute(_CREATE_FINANCIAL_UPLOADS)
         conn.executescript(_SEED_THRESHOLDS)
         conn.execute(
             "INSERT OR IGNORE INTO users (email, role, display_name) "
@@ -870,3 +886,62 @@ def get_latest_raw_kpi_data() -> Optional[dict]:
     data = json.loads(row["data_json"])
     data["_synced_at"] = row["synced_at"]
     return data
+
+
+# ---------------------------------------------------------------------------
+# Financial Uploads (P&L PDF uploads — replaces QuickBooks OAuth)
+# ---------------------------------------------------------------------------
+
+def save_financial_upload(period: str, parsed: dict, metrics: dict, door_count: int) -> int:
+    """Save a parsed P&L upload. Returns the new row id."""
+    import json
+    with _connect() as conn:
+        cur = conn.execute(
+            """INSERT INTO financial_uploads
+               (period, uploaded_at, gross_revenue, direct_labor, mgmt_labor,
+                total_expenses, net_income, door_count, metrics_json)
+               VALUES (?,datetime('now'),?,?,?,?,?,?,?)""",
+            (
+                period,
+                parsed["gross_revenue"],
+                parsed["direct_labor"],
+                parsed["mgmt_labor"],
+                parsed["total_expenses"],
+                parsed["net_income"],
+                door_count,
+                json.dumps(metrics),
+            ),
+        )
+        return cur.lastrowid
+
+
+def get_latest_financial_upload() -> Optional[dict]:
+    """Return the most recent P&L period (latest upload wins per period), sorted chronologically."""
+    history = get_financial_history()
+    if not history:
+        return None
+    return history[-1]
+
+
+def get_financial_history() -> list:
+    """Return one row per period (latest upload wins), sorted chronologically by period."""
+    with _connect() as conn:
+        rows = conn.execute(
+            """SELECT f.* FROM financial_uploads f
+               INNER JOIN (
+                 SELECT MAX(id) AS max_id FROM financial_uploads GROUP BY period
+               ) g ON f.id = g.max_id"""
+        ).fetchall()
+    if not rows:
+        return []
+
+    _MONTHS = {'January':1,'February':2,'March':3,'April':4,'May':5,'June':6,
+               'July':7,'August':8,'September':9,'October':10,'November':11,'December':12}
+
+    def _sort_key(row):
+        parts = row['period'].split()
+        if len(parts) == 2:
+            return (int(parts[1]), _MONTHS.get(parts[0], 0))
+        return (0, 0)
+
+    return sorted([dict(r) for r in rows], key=_sort_key)

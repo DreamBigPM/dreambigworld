@@ -62,6 +62,86 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════
+       CLIENT GROWTH — Churn Tracker
+  ═════════════════════════════════════════════════════ -->
+  <div class="section-label">Client Growth</div>
+  <div style="display:flex;gap:14px;justify-content:center;align-items:stretch;flex-wrap:wrap;margin-bottom:8px">
+  <div class="detail-card" id="churn-card" style="cursor:pointer;flex:0 0 320px" onclick="openChurnDrillDown()">
+    <div class="detail-card-hd">
+      <span class="dch-title">Client Churn</span>
+      <span class="dch-badge" id="churn-badge">—</span>
+      <span class="dch-arrow">›</span>
+    </div>
+    <div class="dc-body" style="padding:16px 18px;display:flex;align-items:center;gap:32px">
+      <div>
+        <div id="churn-pct-big" style="font-size:44px;font-weight:800;line-height:1;color:var(--text)">—</div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px">YTD Churn</div>
+      </div>
+      <div id="churn-sub" style="font-size:13px;color:var(--muted);line-height:1.8">Loading…</div>
+    </div>
+    <div class="dc-footer" style="display:flex;justify-content:space-between">
+      <span class="dc-see-all" onclick="event.stopPropagation();openChurnDrillDown()">View history →</span>
+    </div>
+  </div>
+
+  <div class="detail-card" style="flex:0 0 192px">
+    <div class="detail-card-hd" style="cursor:default">
+      <span class="dch-title">Doors Added</span>
+      <span class="dch-badge clear" id="doors-added-badge">—</span>
+    </div>
+    <div class="dc-body" style="padding:16px 18px">
+      <div id="doors-added-big" style="font-size:44px;font-weight:800;line-height:1;color:#16a34a">—</div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px">This Year</div>
+    </div>
+  </div>
+
+  <div class="detail-card" style="flex:0 0 192px">
+    <div class="detail-card-hd" style="cursor:default">
+      <span class="dch-title">Doors Lost</span>
+      <span class="dch-badge danger" id="doors-lost-badge">—</span>
+    </div>
+    <div class="dc-body" style="padding:16px 18px">
+      <div id="doors-lost-big" style="font-size:44px;font-weight:800;line-height:1;color:#dc2626">—</div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px">This Year</div>
+    </div>
+  </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       FINANCIAL PERFORMANCE — QuickBooks
+  ═════════════════════════════════════════════════════ -->
+  <div id="qb-section-label" style="display:none;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <span class="section-label" style="margin:0">Financial Performance</span>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="qb-period-label" style="font-size:12px;color:#6b7280"></span>
+      <label for="pl-file-input-2" style="font-size:12px;color:#E8611A;cursor:pointer;font-weight:600">&#8679; Upload new P&amp;L</label>
+    </div>
+  </div>
+  <input type="file" id="pl-file-input-2" accept=".pdf" style="display:none" onchange="handlePLUpload(this)">
+  <div id="qb-kpi-grid" class="kpi-grid" style="display:none"></div>
+  <div id="qb-chart-section" style="display:none;margin-top:20px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af;margin-bottom:8px">Labor Efficiency</div>
+    <div id="qb-chart-container" style="width:100%;overflow-x:auto"></div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af;margin:16px 0 8px">Revenue & Profit Per Door</div>
+    <div id="qb-profit-chart-container" style="width:100%;overflow-x:auto"></div>
+  </div>
+  <div id="qb-connect-prompt" style="display:none">
+    <div class="detail-card" style="padding:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px">No P&amp;L uploaded yet</div>
+          <div style="color:#6b7280;font-size:13px">Export your P&amp;L from QuickBooks (PDF) and upload it here</div>
+        </div>
+        <label for="pl-file-input" style="display:inline-block;padding:9px 18px;background:#E8611A;color:#fff;border-radius:7px;font-weight:700;cursor:pointer;font-size:13px">
+          Upload P&amp;L
+        </label>
+      </div>
+      <input type="file" id="pl-file-input" accept=".pdf" style="display:none" onchange="handlePLUpload(this)">
+      <div id="pl-upload-error" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
        DAILY ZERO GOALS
   ═════════════════════════════════════════════════════ -->
   <div class="section-label">Daily Zero Goals</div>
@@ -204,6 +284,18 @@
   </div><!-- /detail-card-grid -->
 
 </div><!-- /main -->
+
+<!-- FINANCIAL METRIC DRILL-DOWN MODAL -->
+<div id="fin-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500" onclick="closeFinModal()"></div>
+<div id="fin-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;padding:28px;width:460px;max-width:94vw;z-index:501;box-shadow:0 12px 40px rgba(0,0,0,.18)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+    <span id="fin-modal-title" style="font-size:16px;font-weight:700"></span>
+    <button onclick="closeFinModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;line-height:1">×</button>
+  </div>
+  <div id="fin-modal-body" style="font-size:13px;line-height:1.7;color:#374151"></div>
+</div>
+
+<!-- DOOR EVENT MODAL -->
 
 <!-- DRILL-DOWN DRAWER -->
 <div id="drawer-overlay" onclick="closeDrillDown()"></div>
@@ -768,15 +860,21 @@ async function loadAll(manual) {
     if (kpisRes.status === 401) { window.location.href = '/auth/login'; return; }
     if (!kpisRes.ok) throw new Error('KPI endpoint ' + kpisRes.status);
 
-    // Fetch alerts and briefing after KPI refresh so briefing sees the cleared cache.
-    const [kpis, alertsRes, briefingRes] = await Promise.all([
+    // Fetch alerts, briefing, churn, and financials in parallel after KPI load.
+    const [kpis, alertsRes, briefingRes, churnRes, finRes] = await Promise.all([
       kpisRes.json(),
       fetch('/api/alerts'),
       fetch('/api/briefing'),
+      fetch('/api/churn'),
+      fetch('/api/financials'),
     ]);
 
     const alertsData   = alertsRes.ok   ? await alertsRes.json()   : {alerts:[], count:0};
     const briefingData = briefingRes.ok ? await briefingRes.json() : {text:''};
+    const churnData    = churnRes.ok    ? await churnRes.json()    : null;
+    const finData      = finRes.ok      ? await finRes.json()      : null;
+    if (churnData) { lastChurn = churnData; renderChurn(churnData); }
+    if (finData)   { lastFinancials = finData; renderQBMetrics(finData); }
 
     lastKpis = kpis;
     document.getElementById('offline-banner').style.display = 'none';
@@ -981,6 +1079,11 @@ function dstats() {
 
 function renderDrawer(section, data) {
   const body = document.getElementById('drawer-body');
+
+  if (section === 'churn') {
+    _renderChurnDrawer(data, body);
+    return;
+  }
 
   if (section === 'delinquency' || section === 'rent_collected') {
     const rows = data.records || data.delinquent_leases || [];
@@ -1484,6 +1587,728 @@ function renderDrawer(section, data) {
 
   // Fallback — show raw JSON summary
   body.innerHTML = `<pre style="font-size:11px;color:var(--muted);overflow:auto">${JSON.stringify(data, null, 2)}</pre>`;
+}
+
+// ─────────────────────────────────────────────────────────
+// CHURN TRACKER
+// ─────────────────────────────────────────────────────────
+let lastChurn = null;
+let lastFinancials = null;
+
+async function fetchAndRenderChurn() {
+  try {
+    const res = await fetch('/api/churn');
+    if (!res.ok) return;
+    const data = await res.json();
+    lastChurn = data;
+    renderChurn(data);
+  } catch (e) {
+    console.error('Churn fetch error:', e);
+  }
+}
+
+function churnColor(pct) {
+  if (pct == null) return '';
+  if (pct < 10) return '#16a34a';   // green
+  if (pct <= 20) return '#d97706';  // amber
+  return '#dc2626';                 // red
+}
+
+function churnBadgeClass(pct) {
+  if (pct == null) return '';
+  if (pct < 10) return 'clear';
+  if (pct <= 20) return 'warn';
+  return 'danger';
+}
+
+function renderChurn(data) {
+  if (!data || !data.connected) {
+    document.getElementById('churn-pct-big').textContent = '—';
+    document.getElementById('churn-badge').textContent   = 'Not connected';
+    document.getElementById('churn-sub').textContent     = 'Add GOOGLE_SERVICE_ACCOUNT_JSON to .env to enable';
+    return;
+  }
+
+  const pct = data.current_churn_pct;
+  const big = document.getElementById('churn-pct-big');
+  big.textContent   = pct != null ? pct.toFixed(2) + '%' : '—';
+  big.style.color   = churnColor(pct);
+
+  const badge = document.getElementById('churn-badge');
+  badge.textContent = pct != null ? pct.toFixed(2) + '%' : '—';
+  badge.className   = 'dch-badge ' + churnBadgeClass(pct);
+
+  const sub = document.getElementById('churn-sub');
+  sub.innerHTML = [
+    `<strong>${data.current_offboards ?? 0}</strong> offboards / <strong>${data.current_start_doors ?? 0}</strong> doors at Jan 1`,
+    `<strong>${data.current_door_count ?? 0}</strong> doors today`,
+  ].join(' &nbsp;·&nbsp; ');
+
+  const adds = data.current_adds ?? 0;
+  const lost = data.current_offboards ?? 0;
+  document.getElementById('doors-added-big').textContent  = adds;
+  document.getElementById('doors-added-badge').textContent = adds;
+  document.getElementById('doors-lost-big').textContent   = lost;
+  document.getElementById('doors-lost-badge').textContent = lost;
+}
+
+function openChurnDrillDown() {
+  openDrillDown('churn', 'Client Churn', lastChurn || { connected: false, history: [] });
+}
+
+// ─────────────────────────────────────────────────────────
+// CHURN DOOR EVENT MODAL
+// ─────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────
+// FINANCIAL METRIC DRILL-DOWN MODAL
+// ─────────────────────────────────────────────────────────
+
+function openFinModal(key) {
+  if (!lastFinancials || !lastFinancials.metrics) return;
+  const m  = lastFinancials.metrics;
+  const bd = m.breakdown || {};
+  const gr = bd.gross_revenue || 0;
+  const dc = bd.door_count    || 0;
+
+  const fmt$ = v => '$' + Math.abs(v).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const fmtPct = v => v.toFixed(2) + '%';
+
+  const titles = {
+    rpu: 'Revenue Per Unit (RPU)', ppu: 'Profit Per Unit (PPU)',
+    dler: 'Direct Labor Efficiency Ratio (DLER)',
+    mler: 'Management Labor Efficiency Ratio (MLER)',
+    tler: 'Total Labor Efficiency Ratio (TLER)',
+    expense_ratio: 'Expense Ratio',
+  };
+
+  let html = '';
+
+  if (key === 'rpu') {
+    html = `
+      <div style="margin-bottom:10px"><strong>Formula:</strong> Revenue ÷ Door Count</div>
+      <table class="fin-detail-table">
+        <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmt$(gr)}</td></tr>
+        <tr class="fin-total"><td style="font-weight:700">Door Count</td><td style="text-align:right;font-weight:700">${dc}</td></tr>
+      </table>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        ${fmt$(gr)} ÷ ${dc} = <span style="color:${m.rpu>=335?'#16a34a':'#dc2626'}">${fmt$(m.rpu)}/door</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: $335/door</div>`;
+  } else if (key === 'ppu') {
+    const sign = bd.net_income < 0 ? '−' : '';
+    html = `
+      <div style="margin-bottom:10px"><strong>Formula:</strong> Net Income ÷ Door Count</div>
+      <table class="fin-detail-table">
+        <tr><td style="color:#6b7280">Net Income</td><td style="text-align:right;font-weight:600">${bd.net_income<0?'−':''}${fmt$(bd.net_income)}</td></tr>
+        <tr class="fin-total"><td style="font-weight:700">Door Count</td><td style="text-align:right;font-weight:700">${dc}</td></tr>
+      </table>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        ${sign}${fmt$(bd.net_income)} ÷ ${dc} = <span style="color:${m.ppu>=50?'#16a34a':'#dc2626'}">${m.ppu<0?'−':''}${fmt$(m.ppu)}/door</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: $50/door</div>`;
+  } else if (key === 'dler') {
+    const rows = (bd.dler_items||[]).map(i =>
+      `<tr><td style="color:#6b7280">${i.gl} &nbsp;${i.name}</td><td style="text-align:right;font-weight:500">${fmt$(i.amount)}</td></tr>`
+    ).join('');
+    const dlerColor = m.dler >= 4.51 ? '#16a34a' : '#dc2626';
+    html = `
+      <div style="margin-bottom:4px"><strong>Formula:</strong> Revenue ÷ Direct Labor</div>
+      <div style="margin-bottom:10px;font-size:12px;color:#6b7280">For every $1 of direct labor, how many dollars of revenue?</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af;margin-bottom:4px">Direct Labor Accounts</div>
+      <table class="fin-detail-table">
+        ${rows}
+        <tr class="fin-total"><td style="font-weight:700">Total Direct Labor</td><td style="text-align:right;font-weight:700">${fmt$(bd.direct_labor)}</td></tr>
+        <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmt$(gr)}</td></tr>
+      </table>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        ${fmt$(gr)} ÷ ${fmt$(bd.direct_labor)} = <span style="color:${dlerColor}">${m.dler.toFixed(2)}</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: 4.51 &nbsp;·&nbsp; Higher is better</div>`;
+  } else if (key === 'mler') {
+    const rows = (bd.mler_items||[]).map(i =>
+      `<tr><td style="color:#6b7280">${i.gl} &nbsp;${i.name}</td><td style="text-align:right;font-weight:500">${fmt$(i.amount)}</td></tr>`
+    ).join('');
+    const mlerColor = m.mler >= 3.89 ? '#16a34a' : '#dc2626';
+    html = `
+      <div style="margin-bottom:4px"><strong>Formula:</strong> Revenue ÷ Management Labor</div>
+      <div style="margin-bottom:10px;font-size:12px;color:#6b7280">For every $1 of management labor, how many dollars of revenue?</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af;margin-bottom:4px">Management Labor Accounts</div>
+      <table class="fin-detail-table">
+        ${rows}
+        <tr class="fin-total"><td style="font-weight:700">Total Mgmt Labor</td><td style="text-align:right;font-weight:700">${fmt$(bd.mgmt_labor)}</td></tr>
+        <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmt$(gr)}</td></tr>
+      </table>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        ${fmt$(gr)} ÷ ${fmt$(bd.mgmt_labor)} = <span style="color:${mlerColor}">${m.mler.toFixed(2)}</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: 3.89 &nbsp;·&nbsp; Higher is better</div>`;
+  } else if (key === 'tler') {
+    const tlerColor = m.tler >= 2.05 ? '#16a34a' : '#dc2626';
+    html = `
+      <div style="margin-bottom:4px"><strong>Formula:</strong> Revenue ÷ Total Labor</div>
+      <div style="margin-bottom:10px;font-size:12px;color:#6b7280">For every $1 of total labor (direct + management), how many dollars of revenue?</div>
+      <table class="fin-detail-table">
+        <tr><td style="color:#6b7280">Direct Labor (6319.01, 6325, 6339.01, 6339.02)</td><td style="text-align:right;font-weight:500">${fmt$(bd.direct_labor)}</td></tr>
+        <tr><td style="color:#6b7280">Mgmt Labor (6410)</td><td style="text-align:right;font-weight:500">${fmt$(bd.mgmt_labor)}</td></tr>
+        <tr class="fin-total"><td style="font-weight:700">Total Labor</td><td style="text-align:right;font-weight:700">${fmt$(bd.direct_labor + bd.mgmt_labor)}</td></tr>
+        <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmt$(gr)}</td></tr>
+      </table>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        ${fmt$(gr)} ÷ ${fmt$(bd.direct_labor + bd.mgmt_labor)} = <span style="color:${tlerColor}">${m.tler.toFixed(2)}</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: 2.05 &nbsp;·&nbsp; Higher is better</div>`;
+  } else if (key === 'expense_ratio') {
+    html = `
+      <div style="margin-bottom:14px"><strong>Formula:</strong> Total Expenses ÷ Revenue</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <tr><td style="padding:5px 0;color:#6b7280">Total Expenses</td><td style="text-align:right;font-weight:600">${fmt$(bd.total_expenses)}</td></tr>
+        <tr><td style="padding:5px 0;color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmt$(gr)}</td></tr>
+      </table>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
+        ${fmt$(bd.total_expenses)} ÷ ${fmt$(gr)} = <span style="color:${m.expense_ratio<40?'#16a34a':m.expense_ratio<50?'#d97706':'#dc2626'}">${fmtPct(m.expense_ratio)}</span>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:#6b7280">Target: &lt;40%</div>`;
+  }
+
+  document.getElementById('fin-modal-title').textContent = titles[key] || key;
+  document.getElementById('fin-modal-body').innerHTML    = html;
+  document.getElementById('fin-modal-overlay').style.display = 'block';
+  document.getElementById('fin-modal').style.display         = 'block';
+}
+
+function closeFinModal() {
+  document.getElementById('fin-modal-overlay').style.display = 'none';
+  document.getElementById('fin-modal').style.display         = 'none';
+}
+
+// ─────────────────────────────────────────────────────────
+// QUICKBOOKS FINANCIAL METRICS
+// ─────────────────────────────────────────────────────────
+// 2025 NARPM benchmarks: RPU $335, DLER 4.51, MLER 3.89, TLER 2.05
+const QB_THRESHOLDS = {
+  rpu:           { green: v => v >= 335,  yellow: v => v >= 268,  fmt: v => '$' + Math.round(v) + '<span class="kpi-unit">/door</span>' },
+  ppu:           { green: v => v >= 50,   yellow: v => v >= 0,    fmt: v => '$' + Math.round(v) + '<span class="kpi-unit">/door</span>' },
+  dler:          { green: v => v >= 4.51, yellow: v => v >= 3.61, fmt: v => v.toFixed(2) },
+  mler:          { green: v => v >= 3.89, yellow: v => v >= 3.11, fmt: v => v.toFixed(2) },
+  tler:          { green: v => v >= 2.05, yellow: v => v >= 1.64, fmt: v => v.toFixed(2) },
+  expense_ratio: { green: v => v < 40,   yellow: v => v < 50,    fmt: v => v.toFixed(1) + '%', invertColor: true },
+};
+const QB_NAMES = {
+  rpu: 'Revenue Per Unit', ppu: 'Profit Per Unit',
+  dler: 'Direct Labor (DLER)', mler: 'Mgmt Labor (MLER)',
+  tler: 'Total Labor (TLER)', expense_ratio: 'Expense Ratio',
+};
+const QB_TARGETS = {
+  rpu:  'NARPM $335/door', ppu: 'NARPM $50/door',
+  dler: 'NARPM 4.51',      mler: 'NARPM 3.89',
+  tler: 'NARPM 2.05',      expense_ratio: 'Target <40%',
+};
+
+function qbColor(key, val) {
+  const t = QB_THRESHOLDS[key];
+  if (!t || val == null) return 'gray';
+  if (t.green(val)) return 'green';
+  if (t.yellow(val)) return 'yellow';
+  return 'red';
+}
+
+function renderQBMetrics(d) {
+  const qbLabel   = document.getElementById('qb-section-label');
+  const qbGrid    = document.getElementById('qb-kpi-grid');
+  const qbPrompt  = document.getElementById('qb-connect-prompt');
+
+  if (!d || !d.connected || !d.metrics) {
+    qbLabel.style.display  = 'none';
+    qbGrid.style.display   = 'none';
+    qbPrompt.style.display = 'block';
+    return;
+  }
+
+  // Show period label with upload date
+  const periodEl = document.getElementById('qb-period-label');
+  if (periodEl) {
+    let label = d.period || '';
+    if (d.uploaded_at) {
+      try {
+        const dt = new Date(d.uploaded_at + 'Z');
+        label += ' · uploaded ' + dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      } catch(e) {}
+    }
+    periodEl.textContent = label;
+  }
+
+  const m    = d.metrics;
+  const keys = ['rpu', 'ppu', 'dler', 'mler', 'tler'];
+  const cards = keys.map(k => {
+    const val   = m[k];
+    const color = qbColor(k, val);
+    const t     = QB_THRESHOLDS[k];
+    const disp      = val != null ? t.fmt(val) : '—';
+    const dispColor  = color === 'yellow' ? 'red' : color;
+    const valueColor = {green:'#16A34A', red:'#DC2626', gray:'#8A9099'}[dispColor];
+    return `<div class="kpi-card ${dispColor}" style="cursor:pointer" onclick="openFinModal('${k}')">
+      <div class="kpi-name">${QB_NAMES[k]}</div>
+      <div class="kpi-value" style="color:${valueColor}">${disp}</div>
+      <div class="kpi-target">${QB_TARGETS[k]}</div>
+      <div class="kpi-status">${{green:'● On Benchmark',yellow:'● Below Benchmark',red:'● Below Benchmark',gray:'— No Data'}[color]}</div>
+    </div>`;
+  });
+
+  qbLabel.style.display  = 'flex';
+  qbGrid.style.display   = '';
+  qbGrid.innerHTML       = cards.join('');
+  qbPrompt.style.display = 'none';
+
+  fetchFinHistory();
+}
+
+async function fetchFinHistory() {
+  try {
+    const res = await fetch('/api/financials/history');
+    if (!res.ok) return;
+    const data = await res.json();
+    renderFinChart(data.months || []);
+    renderProfitChart(data.months || []);
+  } catch(e) {}
+}
+
+function _ensureFinTip() {
+  let tip = document.getElementById('_fin-tip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = '_fin-tip';
+    tip.style.cssText = 'position:fixed;pointer-events:none;display:none;background:#1f2937;color:#fff;border-radius:8px;padding:10px 14px;font-family:system-ui,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:9999;min-width:120px';
+    document.body.appendChild(tip);
+  }
+  return tip;
+}
+function _posFinTip(e) {
+  const tip = document.getElementById('_fin-tip');
+  if (!tip || tip.style.display === 'none') return;
+  const x = e.clientX + 16, y = e.clientY - 30;
+  tip.style.left = Math.min(x, window.innerWidth - tip.offsetWidth - 12) + 'px';
+  tip.style.top  = Math.max(y, 8) + 'px';
+}
+function _showFinTip(e, el) {
+  const tip = _ensureFinTip();
+  const period = el.dataset.period;
+  const ALL = [
+    {key:'dler', label:'DLER', color:'#FF7417', bench:4.51},
+    {key:'mler', label:'MLER', color:'#16A34A', bench:3.89},
+    {key:'tler', label:'TLER', color:'#6366F1', bench:2.05},
+  ];
+  const rows = ALL.map(sr => {
+    const v = parseFloat(el.dataset[sr.key]);
+    if (isNaN(v)) return '';
+    const above = v >= sr.bench;
+    return `<div style="display:flex;align-items:baseline;gap:8px;margin-top:7px">` +
+      `<span style="font-size:11px;font-weight:700;color:${sr.color};min-width:32px">${sr.label}</span>` +
+      `<span style="font-size:24px;font-weight:700;color:${sr.color};line-height:1">${v.toFixed(2)}</span>` +
+      `<span style="font-size:11px;color:${above?'#4ade80':'#f87171'}">${above?'▲':'▼'}&thinsp;${sr.bench}</span>` +
+      `</div>`;
+  }).join('');
+  tip.innerHTML = `<div style="font-size:11px;color:#9ca3af;margin-bottom:2px">${period}</div>` + rows;
+  tip.style.display = 'block';
+  _posFinTip(e);
+}
+function _hideFinTip() {
+  const tip = document.getElementById('_fin-tip');
+  if (tip) tip.style.display = 'none';
+}
+
+function renderFinChart(months) {
+  const section   = document.getElementById('qb-chart-section');
+  const container = document.getElementById('qb-chart-container');
+  // Filter out months with bad data (percentage-based values > 20 are clearly wrong)
+  const clean = (months || []).filter(m => {
+    const d = m.metrics; return d && d.dler < 20 && d.mler < 20 && d.tler < 20;
+  });
+  if (clean.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  const W = 620, H = 210;
+  const pL = 36, pR = 16, pT = 30, pB = 30;
+  const plotW = W - pL - pR, plotH = H - pT - pB;
+
+  const SERIES = [
+    { key:'dler', label:'DLER', color:'#FF7417', bench:4.51 },
+    { key:'mler', label:'MLER', color:'#16A34A', bench:3.89 },
+    { key:'tler', label:'TLER', color:'#6366F1', bench:2.05 },
+  ];
+
+  // Nice Y scale: max ~5 ticks, rounded to clean increments
+  const allVals    = SERIES.flatMap(s => clean.map(m => m.metrics[s.key]).filter(v => v != null));
+  const rawMax     = Math.max(...allVals, ...SERIES.map(s => s.bench)) * 1.12;
+  const roughStep  = rawMax / 5;
+  const mag        = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const step       = ([1, 2, 2.5, 5, 10].find(p => p * mag >= roughStep) || 10) * mag;
+  const yMax       = Math.ceil(rawMax / step) * step;
+  const yTicks     = [];
+  for (let t = 0; t <= yMax + 1e-9; t = Math.round((t + step) * 1000) / 1000) yTicks.push(t);
+
+  const n    = clean.length;
+  const xPos = i  => pL + (n > 1 ? (i / (n - 1)) * plotW : plotW / 2);
+  const yPos = v  => pT + plotH * (1 - v / yMax);
+
+  let s = '';
+
+  // Y grid + labels
+  yTicks.forEach(t => {
+    const y = yPos(t).toFixed(1);
+    s += `<line x1="${pL}" y1="${y}" x2="${W-pR}" y2="${y}" stroke="${t===0?'#d1d5db':'#f0f2f4'}" stroke-width="1"/>`;
+    s += `<text x="${pL-5}" y="${(+y+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#b0b7c0" font-family="system-ui,sans-serif">${Number.isInteger(t)?t:t.toFixed(1)}</text>`;
+  });
+
+  // X axis line
+  s += `<line x1="${pL}" y1="${(pT+plotH).toFixed(1)}" x2="${W-pR}" y2="${(pT+plotH).toFixed(1)}" stroke="#e5e7eb" stroke-width="1"/>`;
+
+  // Benchmark lines (dashed, subtle)
+  SERIES.forEach(sr => {
+    const y = yPos(sr.bench).toFixed(1);
+    s += `<line x1="${pL}" y1="${y}" x2="${W-pR}" y2="${y}" stroke="${sr.color}" stroke-width="1" stroke-dasharray="3,4" opacity="0.35"/>`;
+  });
+
+  // Data lines
+  SERIES.forEach(sr => {
+    const pts = clean.map((m, i) => {
+      const v = m.metrics[sr.key]; return v != null ? `${xPos(i).toFixed(1)},${yPos(v).toFixed(1)}` : null;
+    }).filter(Boolean);
+    if (pts.length > 1)
+      s += `<polyline points="${pts.join(' ')}" fill="none" stroke="${sr.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    // Data point circles — data attrs used by hover tooltip
+    clean.forEach((m, i) => {
+      const v = m.metrics[sr.key]; if (v == null) return;
+      const cx = xPos(i).toFixed(1), cy = yPos(v).toFixed(1);
+      s += `<circle cx="${cx}" cy="${cy}" r="5" fill="${sr.color}" stroke="#fff" stroke-width="1.5" style="cursor:pointer" data-label="${sr.label}" data-value="${v}" data-bench="${sr.bench}" data-period="${m.period}" data-color="${sr.color}" data-dler="${m.metrics.dler??''}" data-mler="${m.metrics.mler??''}" data-tler="${m.metrics.tler??''}" />`;
+    });
+  });
+
+  // X-axis labels (skip every other if >8 months)
+  const skip = clean.length > 8 ? 2 : 1;
+  clean.forEach((m, i) => {
+    if (i % skip !== 0 && i !== clean.length - 1) return;
+    const [mon, yr] = m.period.split(' ');
+    const label = mon.slice(0,3) + (yr ? ' \'' + yr.slice(-2) : '');
+    s += `<text x="${xPos(i).toFixed(1)}" y="${(pT+plotH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="#8a9099" font-family="system-ui,sans-serif">${label}</text>`;
+  });
+
+  // Legend (top-left, single row)
+  SERIES.forEach((sr, i) => {
+    const lx = pL + i * 162;
+    s += `<circle cx="${lx+5}" cy="15" r="3.5" fill="${sr.color}"/>`;
+    s += `<text x="${lx+13}" y="19" font-size="10" fill="#6b7280" font-family="system-ui,sans-serif">${sr.label}</text>`;
+    s += `<text x="${lx+37}" y="19" font-size="10" fill="#b0b7c0" font-family="system-ui,sans-serif">bench ${sr.bench}</text>`;
+  });
+
+  // Data table below chart
+  const hdrCells = clean.map(m => {
+    const [mon, yr] = m.period.split(' ');
+    return `<th style="text-align:right;padding:4px 10px;font-size:10px;font-weight:600;letter-spacing:.05em;color:#9ca3af;border-bottom:1px solid #e5e7eb;border-top:none;background:none;text-transform:uppercase">${mon.slice(0,3)}${yr?' \''+yr.slice(-2):''}</th>`;
+  }).join('');
+
+  const bodyRows = SERIES.map(sr => {
+    const cells = clean.map(m => {
+      const v = m.metrics[sr.key];
+      if (v == null) return `<td style="text-align:right;padding:3px 10px;color:#9ca3af;border:none;background:none">—</td>`;
+      const color = v >= sr.bench ? '#16a34a' : '#dc2626';
+      return `<td style="text-align:right;padding:3px 10px;font-weight:600;font-size:12px;color:${color};border:none;background:none">${v.toFixed(2)}</td>`;
+    }).join('');
+    return `<tr><td style="padding:3px 10px;font-size:11px;font-weight:700;color:${sr.color};border:none;background:none;letter-spacing:.04em">${sr.label}</td>${cells}</tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block">${s}</svg>
+    <table style="border-collapse:collapse;font-family:system-ui,sans-serif;margin-top:2px">
+      <thead><tr><th style="padding:4px 10px;border-bottom:1px solid #e5e7eb;border-top:none;background:none"></th>${hdrCells}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table>`;
+
+  // Hover tooltips on chart dots
+  const svg = container.querySelector('svg');
+  if (svg) {
+    svg.addEventListener('mouseover', e => {
+      if (e.target.tagName === 'circle' && e.target.dataset.label) _showFinTip(e, e.target);
+    });
+    svg.addEventListener('mousemove', _posFinTip);
+    svg.addEventListener('mouseout', e => {
+      if (e.target.tagName === 'circle') _hideFinTip();
+    });
+  }
+}
+
+async function handlePLUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const errEl = document.getElementById('pl-upload-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+
+  // Show loading state on the label that triggered this input
+  const label = document.querySelector('label[for="' + input.id + '"]');
+  const origText = label ? label.textContent.trim() : '';
+  if (label) label.textContent = 'Uploading…';
+
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res  = await fetch('/api/financials/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      if (errEl) { errEl.textContent = data.error || 'Upload failed'; errEl.style.display = 'block'; }
+      if (label) label.textContent = origText;
+      return;
+    }
+
+    // Success — re-fetch /api/financials so we get the proper uploaded_at timestamp
+    const finRes = await fetch('/api/financials');
+    const finData = finRes.ok ? await finRes.json() : data;
+    lastFinancials = finData;
+    renderQBMetrics(finData);
+    fetchFinHistory();
+    renderProfitChart([]);
+    if (label) label.textContent = origText;
+    input.value = '';  // reset so same file can be re-uploaded
+  } catch(e) {
+    if (errEl) { errEl.textContent = 'Upload failed — check the server is running'; errEl.style.display = 'block'; }
+    if (label) label.textContent = origText;
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// PROFIT CHART (RPU / PPU)
+// ─────────────────────────────────────────────────────────
+function renderProfitChart(months) {
+  const container = document.getElementById('qb-profit-chart-container');
+  if (!container) return;
+
+  const clean = (months || []).filter(m => m.metrics && m.metrics.rpu != null && m.metrics.ppu != null);
+  if (clean.length === 0) { container.innerHTML = ''; return; }
+
+  const W = 620, H = 200;
+  const pL = 46, pR = 16, pT = 28, pB = 30;
+  const plotW = W - pL - pR, plotH = H - pT - pB;
+
+  const SERIES = [
+    { key:'rpu', label:'RPU',  color:'#FF7417', bench:335 },
+    { key:'ppu', label:'PPU',  color:'#6366F1', bench:50  },
+  ];
+
+  const allVals = SERIES.flatMap(s => clean.map(m => m.metrics[s.key]).filter(v => v != null));
+  const allBenches = SERIES.map(s => s.bench);
+  const rawMin = Math.min(...allVals, 0);
+  const rawMax = Math.max(...allVals, ...allBenches) * 1.12;
+
+  // Nice scale that handles negatives
+  const range    = rawMax - rawMin;
+  const roughStep = range / 5;
+  const mag      = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const step     = ([1, 2, 2.5, 5, 10].find(p => p * mag >= roughStep) || 10) * mag;
+  const yMin     = Math.floor(rawMin / step) * step;
+  const yMax     = Math.ceil(rawMax / step) * step;
+  const yTicks   = [];
+  for (let t = yMin; t <= yMax + 1e-9; t = Math.round((t + step) * 1000) / 1000) yTicks.push(t);
+
+  const n    = clean.length;
+  const xPos = i => pL + (n > 1 ? (i / (n - 1)) * plotW : plotW / 2);
+  const yPos = v => pT + plotH * (1 - (v - yMin) / (yMax - yMin));
+  const y0   = yPos(0);
+
+  let s = '';
+
+  // Y grid + labels
+  yTicks.forEach(t => {
+    const y = yPos(t).toFixed(1);
+    const isZero = Math.abs(t) < 1e-9;
+    s += `<line x1="${pL}" y1="${y}" x2="${W-pR}" y2="${y}" stroke="${isZero ? '#d1d5db' : '#f0f2f4'}" stroke-width="${isZero ? 1.5 : 1}"/>`;
+    s += `<text x="${pL-6}" y="${(+y+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#b0b7c0" font-family="system-ui,sans-serif">$${Number.isInteger(t)?t:t.toFixed(0)}</text>`;
+  });
+
+  // X axis
+  s += `<line x1="${pL}" y1="${y0.toFixed(1)}" x2="${W-pR}" y2="${y0.toFixed(1)}" stroke="#e5e7eb" stroke-width="1"/>`;
+
+  // Benchmark lines
+  SERIES.forEach(sr => {
+    const y = yPos(sr.bench).toFixed(1);
+    s += `<line x1="${pL}" y1="${y}" x2="${W-pR}" y2="${y}" stroke="${sr.color}" stroke-width="1" stroke-dasharray="3,4" opacity="0.35"/>`;
+  });
+
+  // Data lines + dots
+  SERIES.forEach(sr => {
+    const pts = clean.map((m, i) => {
+      const v = m.metrics[sr.key]; return v != null ? `${xPos(i).toFixed(1)},${yPos(v).toFixed(1)}` : null;
+    }).filter(Boolean);
+    if (pts.length > 1)
+      s += `<polyline points="${pts.join(' ')}" fill="none" stroke="${sr.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+    clean.forEach((m, i) => {
+      const v = m.metrics[sr.key]; if (v == null) return;
+      const cx = xPos(i).toFixed(1), cy = yPos(v).toFixed(1);
+      const dotColor = sr.key === 'ppu' ? (v >= 0 ? '#16a34a' : '#dc2626') : sr.color;
+      s += `<circle cx="${cx}" cy="${cy}" r="5" fill="${dotColor}" stroke="#fff" stroke-width="1.5" style="cursor:pointer" data-label="${sr.label}" data-value="${v}" data-bench="${sr.bench}" data-period="${m.period}" data-color="${dotColor}" data-rpu="${m.metrics.rpu??''}" data-ppu="${m.metrics.ppu??''}"/>`;
+    });
+  });
+
+  // X labels
+  const skip = clean.length > 8 ? 2 : 1;
+  clean.forEach((m, i) => {
+    if (i % skip !== 0 && i !== clean.length - 1) return;
+    const [mon, yr] = m.period.split(' ');
+    const label = mon.slice(0,3) + (yr ? ' \'' + yr.slice(-2) : '');
+    s += `<text x="${xPos(i).toFixed(1)}" y="${(pT+plotH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="#8a9099" font-family="system-ui,sans-serif">${label}</text>`;
+  });
+
+  // Legend
+  SERIES.forEach((sr, i) => {
+    const lx = pL + i * 162;
+    s += `<circle cx="${lx+5}" cy="15" r="3.5" fill="${sr.color}"/>`;
+    s += `<text x="${lx+13}" y="19" font-size="10" fill="#6b7280" font-family="system-ui,sans-serif">${sr.label}</text>`;
+    s += `<text x="${lx+37}" y="19" font-size="10" fill="#b0b7c0" font-family="system-ui,sans-serif">bench $${sr.bench}</text>`;
+  });
+
+  // Data table
+  const hdrCells = clean.map(m => {
+    const [mon, yr] = m.period.split(' ');
+    return `<th style="text-align:right;padding:4px 10px;font-size:10px;font-weight:600;letter-spacing:.05em;color:#9ca3af;border-bottom:1px solid #e5e7eb;border-top:none;background:none;text-transform:uppercase">${mon.slice(0,3)}${yr?' \''+yr.slice(-2):''}</th>`;
+  }).join('');
+
+  const bodyRows = SERIES.map(sr => {
+    const cells = clean.map(m => {
+      const v = m.metrics[sr.key];
+      if (v == null) return `<td style="text-align:right;padding:3px 10px;color:#9ca3af;border:none;background:none">—</td>`;
+      const isGood = sr.key === 'ppu' ? v >= 0 : v >= sr.bench;
+      const color  = sr.key === 'ppu' ? (v >= 0 ? '#16a34a' : '#dc2626') : (isGood ? '#16a34a' : '#dc2626');
+      return `<td style="text-align:right;padding:3px 10px;font-weight:600;font-size:12px;color:${color};border:none;background:none">$${v.toFixed(0)}</td>`;
+    }).join('');
+    return `<tr><td style="padding:3px 10px;font-size:11px;font-weight:700;color:${sr.color};border:none;background:none;letter-spacing:.04em">${sr.label}</td>${cells}</tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block">${s}</svg>
+    <table style="border-collapse:collapse;font-family:system-ui,sans-serif;margin-top:2px">
+      <thead><tr><th style="padding:4px 10px;border-bottom:1px solid #e5e7eb;border-top:none;background:none"></th>${hdrCells}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table>`;
+
+  // Tooltip — reuse the same _showFinTip system but pass rpu/ppu
+  const svg = container.querySelector('svg');
+  if (svg) {
+    svg.addEventListener('mouseover', e => {
+      if (e.target.tagName === 'circle' && e.target.dataset.label) {
+        const el = e.target;
+        const tip = _ensureFinTip();
+        const ALL = [
+          {key:'rpu', label:'RPU', color:'#FF7417', bench:335, fmt: v => '$'+v.toFixed(0)},
+          {key:'ppu', label:'PPU', color:'#6366F1', bench:50,  fmt: v => '$'+v.toFixed(0)},
+        ];
+        const rows = ALL.map(sr => {
+          const v = parseFloat(el.dataset[sr.key]);
+          if (isNaN(v)) return '';
+          const above = v >= sr.bench;
+          const valColor = sr.key === 'ppu' ? (v >= 0 ? '#4ade80' : '#f87171') : (above ? '#4ade80' : '#f87171');
+          const dotColor = sr.key === 'ppu' ? (v >= 0 ? '#16a34a' : '#dc2626') : sr.color;
+          return `<div style="display:flex;align-items:baseline;gap:8px;margin-top:7px">` +
+            `<span style="font-size:11px;font-weight:700;color:${dotColor};min-width:32px">${sr.label}</span>` +
+            `<span style="font-size:24px;font-weight:700;color:${dotColor};line-height:1">${sr.fmt(v)}</span>` +
+            `<span style="font-size:11px;color:${valColor}">${above?'▲':'▼'}&thinsp;$${sr.bench}</span>` +
+            `</div>`;
+        }).join('');
+        tip.innerHTML = `<div style="font-size:11px;color:#9ca3af;margin-bottom:2px">${el.dataset.period}</div>` + rows;
+        tip.style.display = 'block';
+        _posFinTip(e);
+      }
+    });
+    svg.addEventListener('mousemove', _posFinTip);
+    svg.addEventListener('mouseout',  e => { if (e.target.tagName === 'circle') _hideFinTip(); });
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// CHURN DRILL-DOWN DRAWER
+// ─────────────────────────────────────────────────────────
+function _renderChurnDrawer(data, body) {
+  if (!data || !data.connected) {
+    body.innerHTML = '<div class="drawer-empty">Google Sheets not connected. Add GOOGLE_SERVICE_ACCOUNT_JSON to .env.</div>';
+    return;
+  }
+
+  const history = data.history || [];
+  const avgPct  = data.average_churn_pct;
+
+  // Stats row
+  const statsHtml = dstats(
+    dstat(data.current_churn_pct != null ? data.current_churn_pct.toFixed(2) + '%' : '—',
+      'YTD Churn ' + data.current_year, '', ''),
+    dstat(avgPct != null ? avgPct.toFixed(2) + '%' : '—', 'All-Time Avg', '', ''),
+    dstat(data.current_door_count ?? '—', 'Doors Today', '', ''),
+  );
+
+  // SVG bar chart
+  const chartHtml = _churnBarChart(history, avgPct);
+
+  // Summary table
+  const tRows = history.map(h => {
+    const color = h.churn_pct < 10 ? 'text-green' : h.churn_pct <= 20 ? 'text-yellow' : 'text-red';
+    return `<tr>
+      <td class="font-mono">${h.year}</td>
+      <td class="font-mono">${h.start_doors}</td>
+      <td class="font-mono text-green">+${h.adds}</td>
+      <td class="font-mono text-red">-${h.offboards}</td>
+      <td class="font-mono">${h.end_doors}</td>
+      <td class="font-mono ${color}">${h.churn_pct.toFixed(2)}%</td>
+    </tr>`;
+  }).join('');
+
+  const tableHtml = `<div class="table-wrap" style="margin-top:20px"><table>
+    <thead><tr>
+      <th>Year</th><th>Start Doors</th><th>Adds</th><th>Offboards</th><th>End Doors</th><th>Churn %</th>
+    </tr></thead>
+    <tbody>${tRows}</tbody>
+  </table></div>
+  <div style="font-size:12px;color:var(--muted);margin-top:12px;padding:8px 12px;background:#f9f8f6;border-radius:6px">
+    NARPM benchmark: &lt;15% annual churn
+  </div>`;
+
+  body.innerHTML = statsHtml + chartHtml + tableHtml;
+}
+
+function _churnBarChart(history, avgPct) {
+  if (!history.length) return '';
+  const W = 560, H = 220, padL = 40, padR = 20, padT = 24, padB = 32;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+
+  const maxPct = Math.max(...history.map(h => h.churn_pct), avgPct || 0, 5);
+  const scaleY = v => chartH - (v / (maxPct * 1.15)) * chartH;
+
+  const barW = Math.floor(chartW / history.length * 0.55);
+  const gap  = chartW / history.length;
+
+  const bars = history.map((h, i) => {
+    const x    = padL + i * gap + (gap - barW) / 2;
+    const barH = Math.max(2, chartH - scaleY(h.churn_pct));
+    const y    = padT + scaleY(h.churn_pct);
+    const fill = h.churn_pct < 10 ? '#16a34a' : h.churn_pct <= 20 ? '#d97706' : '#dc2626';
+    const label = h.churn_pct.toFixed(1) + '%';
+    return `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="${fill}" rx="3"/>
+      <text x="${x + barW / 2}" y="${y - 4}" text-anchor="middle" font-size="11" fill="#374151">${label}</text>
+      <text x="${x + barW / 2}" y="${H - padB + 14}" text-anchor="middle" font-size="11" fill="#6b7280">${h.year}</text>`;
+  }).join('');
+
+  let avgLine = '';
+  if (avgPct != null) {
+    const ay = padT + scaleY(avgPct);
+    avgLine = `<line x1="${padL}" y1="${ay}" x2="${W - padR}" y2="${ay}"
+      stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="${W - padR + 2}" y="${ay + 4}" font-size="10" fill="#9ca3af">Avg</text>`;
+  }
+
+  return `<div style="overflow-x:auto;margin:16px 0">
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block">
+      ${bars}${avgLine}
+    </svg>
+  </div>`;
 }
 
 // ─────────────────────────────────────────────────────────
