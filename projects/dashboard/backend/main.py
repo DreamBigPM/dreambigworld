@@ -856,19 +856,18 @@ async def api_drill(
             total = renewed + follow_on_renewed + len(genuine_vac_ids)
             current_rate = round((renewed + follow_on_renewed) / total * 100, 1) if total > 0 else None
 
-            # Inject current month into the historical chart if it's missing (month isn't closed yet)
+            # Always inject current month into the historical chart if it's missing
             try:
                 curr_key = today.strftime("%Y-%m")
                 if not any(m.get("month_key") == curr_key for m in monthly_chart):
-                    if current_rate is not None:
-                        monthly_chart.append({
-                            "month_key": curr_key,
-                            "month_label": today.strftime("%b %Y"),
-                            "rate_pct": current_rate,
-                            "renewals": renewed + follow_on_renewed,
-                            "total_eligible": total,
-                        })
-                        monthly_chart.sort(key=lambda m: m.get("month_key", ""))
+                    monthly_chart.append({
+                        "month_key": curr_key,
+                        "month_label": today.strftime("%b %Y"),
+                        "rate_pct": current_rate,
+                        "renewals": renewed + follow_on_renewed,
+                        "total_eligible": total,
+                    })
+                    monthly_chart.sort(key=lambda m: m.get("month_key", ""))
             except Exception:
                 pass
 

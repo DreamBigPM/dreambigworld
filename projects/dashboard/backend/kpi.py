@@ -104,10 +104,12 @@ async def compute_occupancy() -> dict:
             rentvine.fetch_leases(status="active"),
         )
 
+        today_iso = _today()
         total = len(units)
         leased_unit_ids = set(
             str(l.get("unitId") or l.get("unit_id") or "")
             for l in leases
+            if (l.get("startDate") or l.get("start_date") or "9999-12-31")[:10] <= today_iso
         )
 
         vacant_units = []
