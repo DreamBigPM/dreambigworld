@@ -98,10 +98,21 @@ def _save_token(token_data: dict) -> None:
 
 # ── OAuth helpers ──────────────────────────────────────────────────────────────
 
+def _qb_redirect_uri() -> str:
+    """Build the QuickBooks OAuth redirect URI, respecting APP_BASE_URL in production."""
+    explicit = os.getenv("INTUIT_REDIRECT_URI", "")
+    if explicit:
+        return explicit
+    base_url = os.getenv("APP_BASE_URL", "")
+    if base_url:
+        return f"{base_url}/auth/quickbooks/callback"
+    return "http://localhost:8000/auth/quickbooks/callback"
+
+
 def get_auth_url(state: str) -> str:
     """Build the Intuit OAuth authorization URL."""
     client_id     = os.getenv("INTUIT_CLIENT_ID", "")
-    redirect_uri  = os.getenv("INTUIT_REDIRECT_URI", "http://localhost:8000/auth/quickbooks/callback")
+    redirect_uri  = _qb_redirect_uri()
     params = {
         "client_id":     client_id,
         "scope":         QB_SCOPE,
@@ -119,7 +130,7 @@ async def exchange_code(code: str, realm_id: str) -> dict:
     """
     client_id     = os.getenv("INTUIT_CLIENT_ID", "")
     client_secret = os.getenv("INTUIT_CLIENT_SECRET", "")
-    redirect_uri  = os.getenv("INTUIT_REDIRECT_URI", "http://localhost:8000/auth/quickbooks/callback")
+    redirect_uri  = _qb_redirect_uri()
 
     async with httpx.AsyncClient() as http:
         resp = await http.post(

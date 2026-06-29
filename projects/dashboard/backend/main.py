@@ -442,12 +442,14 @@ async def auth_callback(request: Request, code: str = None, error: str = None):
 
     cookie_value = auth.create_session_cookie(session_data)
     response = RedirectResponse(redirect_url)
+    secure = os.getenv("HTTPS_ENABLED", "").lower() == "true"
     response.set_cookie(
         key=auth.COOKIE_NAME,
         value=cookie_value,
         httponly=True,
         max_age=auth.COOKIE_MAX_AGE,
         samesite="lax",
+        secure=secure,
     )
     return response
 
@@ -1044,9 +1046,18 @@ async def api_financials_upload(
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin role required")
 
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
+
     file_bytes = await file.read()
     if not file_bytes:
         raise HTTPException(status_code=400, detail="Empty file uploaded")
+
+    if not file_bytes[:4] == b"%PDF":
+        raise HTTPException(status_code=400, detail="Invalid file format.")
+
+    if len(file_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 10MB.")
 
     from backend import pl_parser
     parsed = pl_parser.parse_pl_pdf(file_bytes)
@@ -1180,15 +1191,15 @@ _FRONTEND_DIR = _DASHBOARD_DIR / "frontend"
 
 # Explicit routes for role dashboards (Starlette html=True doesn't strip .html from paths)
 @app.get("/operations")
-async def operations_page():
+async def operations_page(user: dict = Depends(auth.get_current_user)):
     return FileResponse(_FRONTEND_DIR / "operations.html")
 
 @app.get("/leasing")
-async def leasing_page():
+async def leasing_page(user: dict = Depends(auth.get_current_user)):
     return FileResponse(_FRONTEND_DIR / "leasing.html")
 
 @app.get("/field")
-async def field_page():
+async def field_page(user: dict = Depends(auth.get_current_user)):
     return FileResponse(_FRONTEND_DIR / "field.html")
 
 if _FRONTEND_DIR.exists():

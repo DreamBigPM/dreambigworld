@@ -29,7 +29,9 @@ _signer: Optional[URLSafeTimedSerializer] = None
 def _get_signer() -> URLSafeTimedSerializer:
     global _signer
     if _signer is None:
-        secret = os.getenv("SECRET_KEY", "dev-secret-change-me")
+        secret = os.getenv("SECRET_KEY", "")
+        if not secret:
+            raise RuntimeError("SECRET_KEY environment variable is not set. Set it before starting the server.")
         _signer = URLSafeTimedSerializer(secret)
     return _signer
 
@@ -48,6 +50,9 @@ def _get_msal_app() -> msal.ConfidentialClientApplication:
 
 
 def _redirect_uri() -> str:
+    base_url = os.getenv("APP_BASE_URL", "")
+    if base_url:
+        return f"{base_url}/auth/callback"
     port = os.getenv("APP_PORT", "8000")
     return f"http://localhost:{port}/auth/callback"
 
