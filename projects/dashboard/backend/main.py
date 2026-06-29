@@ -1191,15 +1191,27 @@ _FRONTEND_DIR = _DASHBOARD_DIR / "frontend"
 
 # Explicit routes for role dashboards (Starlette html=True doesn't strip .html from paths)
 @app.get("/operations")
-async def operations_page(user: dict = Depends(auth.get_current_user)):
+async def operations_page(request: Request):
+    try:
+        await auth.get_current_user(request)
+    except HTTPException:
+        return RedirectResponse(url="/auth/login")
     return FileResponse(_FRONTEND_DIR / "operations.html")
 
 @app.get("/leasing")
-async def leasing_page(user: dict = Depends(auth.get_current_user)):
+async def leasing_page(request: Request):
+    try:
+        await auth.get_current_user(request)
+    except HTTPException:
+        return RedirectResponse(url="/auth/login")
     return FileResponse(_FRONTEND_DIR / "leasing.html")
 
 @app.get("/field")
-async def field_page(user: dict = Depends(auth.get_current_user)):
+async def field_page(request: Request):
+    try:
+        await auth.get_current_user(request)
+    except HTTPException:
+        return RedirectResponse(url="/auth/login")
     return FileResponse(_FRONTEND_DIR / "field.html")
 
 if _FRONTEND_DIR.exists():
