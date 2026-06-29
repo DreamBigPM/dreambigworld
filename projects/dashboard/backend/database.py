@@ -14,11 +14,12 @@ from typing import Optional
 # Path configuration
 # ---------------------------------------------------------------------------
 
-# Resolve DB path relative to this file's location so it works regardless of
-# which directory the process is started from.
+# Resolve DB path — prefer DB_PATH env var (set in production systemd service)
+# so the database lives outside the repo at /var/data/dreambig/dashboard.db.
+# Falls back to a path relative to this file for local development.
 _HERE = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(_HERE, "..", "db", "dashboard.db")
-DB_PATH = os.path.normpath(DB_PATH)
+_DEFAULT_DB_PATH = os.path.normpath(os.path.join(_HERE, "..", "db", "dashboard.db"))
+DB_PATH = os.getenv("DB_PATH", _DEFAULT_DB_PATH)
 
 
 def _connect() -> sqlite3.Connection:
