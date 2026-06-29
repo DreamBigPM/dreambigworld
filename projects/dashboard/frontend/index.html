@@ -421,7 +421,7 @@ function renderKPIs(d) {
     { key:'renewal_rate',       name:'Lease Renewal Rate',    val: renPct,
       drill:'renewal_history',
       display: renPct != null ? fmtPct(renPct) : '—',
-      target:'NARPM ≥90%',
+      target:'Target ≥90%',
       sub: renRolling != null ? 'Rolling 12 mo: ' + fmtPct(renRolling) : 'Last 12 months' },
     { key:'speed_of_repair',    name:'Speed of Repair',       val:sorDays,
       drill:'overdue_work_orders',
