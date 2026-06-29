@@ -768,6 +768,13 @@ def save_role_briefing(role: str, text: str) -> int:
         return cursor.lastrowid
 
 
+def clear_todays_briefings() -> None:
+    """Delete all briefings generated today so they regenerate with fresh data on next request."""
+    today = date.today().isoformat()
+    with _connect() as conn:
+        conn.execute("DELETE FROM role_briefings WHERE date(generated_at) = ?", (today,))
+
+
 def get_todays_role_briefing(role: str) -> Optional[str]:
     """Return today's briefing for the given role, or None if not yet generated."""
     today = date.today().isoformat()

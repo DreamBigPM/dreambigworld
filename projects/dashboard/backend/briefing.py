@@ -106,7 +106,8 @@ async def generate_briefing(
             f"Lines 2+: 3–5 bullet points starting with '• ', each one specific — name the unit or "
             f"property, include the number (dollar amount, days, percentage). "
             f"Focus on what changed since yesterday or what needs action today. "
-            f"Plain English. No sub-bullets. No section headers."
+            f"Plain English. No sub-bullets. No section headers. "
+        f"Always say 'resident' or 'residents' — never 'tenant' or 'tenants'."
         )
 
         user_prompt = (
@@ -117,7 +118,7 @@ async def generate_briefing(
 
         message = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=300,
+            max_tokens=500,
             messages=[{"role": "user", "content": user_prompt}],
             system=system_prompt,
         )

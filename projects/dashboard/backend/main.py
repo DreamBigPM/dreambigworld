@@ -461,6 +461,7 @@ async def api_refresh(user: dict = Depends(auth.get_current_user)):
     if data:
         _kpi_cache = data
         _kpi_cache_time = datetime.utcnow()
+    database.clear_todays_briefings()
     return JSONResponse(_filter_kpis_by_role(_kpi_cache or {}, user))
 
 
@@ -596,9 +597,9 @@ async def api_drill(
         })
 
     if section in ("renewals", "expiring_30", "expiring_60", "expiring_90"):
-        # Use full Rentvine renewal records (all active/MTM leases) instead of
-        # sparse SQLite pipeline — gives accurate 30/60/90-day expiry counts.
-        recs = [dict(r) for r in data.get("renewal_records", [])]
+        # Use Supabase renewal pipeline — same source as the renewal rate card.
+        recs = list(data.get("renewal_rate", {}).get("pipeline", []) or [])
+        recs = [dict(r) if not isinstance(r, dict) else r for r in recs]
         try:
             sqlite_map = {str(r["lease_id"]): r for r in database.get_renewal_pipeline()}
             for r in recs:
@@ -607,11 +608,6 @@ async def api_drill(
                     r["status"] = sqlite_map[lid].get("status", "not_started")
                     r["notes"]  = sqlite_map[lid].get("notes")
                 r.setdefault("status", "not_started")
-                # Map field names the frontend expects
-                if "lease_end_date" not in r:
-                    r["lease_end_date"] = r.get("end_date", "")
-                if "monthly_rent" not in r:
-                    r["monthly_rent"] = r.get("current_rent", 0) or r.get("renewal_rent", 0) or 0
         except Exception as e:
             logger.warning(f"Expiry drill status merge failed: {e}")
         return JSONResponse({"section": section, "records": recs})

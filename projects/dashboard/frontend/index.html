@@ -58,7 +58,7 @@
     <div class="kpi-card gray"><div class="kpi-name">Expiring 60 Days</div><div class="kpi-value">&#8212;</div></div>
     <div class="kpi-card gray"><div class="kpi-name">Expiring 90 Days</div><div class="kpi-value">&#8212;</div></div>
     <div class="kpi-card gray"><div class="kpi-name">Residents</div><div class="kpi-value">&#8212;</div></div>
-    <div class="kpi-card gray"><div class="kpi-name">Owners</div><div class="kpi-value">&#8212;</div></div>
+    <div class="kpi-card gray"><div class="kpi-name">Investors</div><div class="kpi-value">&#8212;</div></div>
   </div>
 
   <!-- ════════════════════════════════════════════════════
@@ -116,8 +116,8 @@
 
     <!-- At-Risk card -->
     <div class="detail-card">
-      <div class="detail-card-hd" onclick="openDrillDown('at_risk','At-Risk Tenants')">
-        <span class="dch-title">At-Risk Tenants</span>
+      <div class="detail-card-hd" onclick="openDrillDown('at_risk','At-Risk Residents')">
+        <span class="dch-title">At-Risk Residents</span>
         <span class="dch-badge warn" id="dc-risk-badge">—</span>
         <span class="dch-arrow">›</span>
       </div>
@@ -126,12 +126,12 @@
           <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
         </div>
       </div>
-      <div class="dc-footer"><span class="dc-see-all" onclick="openDrillDown('at_risk','At-Risk Tenants')">See all →</span></div>
+      <div class="dc-footer"><span class="dc-see-all" onclick="openDrillDown('at_risk','At-Risk Residents')">See all →</span></div>
     </div>
 
     <!-- Open Work Orders card -->
     <div class="detail-card">
-      <div class="detail-card-hd" onclick="openDrillDown('overdue_work_orders','Open Work Orders')">
+      <div class="detail-card-hd" onclick="openDrillDown('work_orders','Open Work Orders')">
         <span class="dch-title">Open Work Orders</span>
         <span class="dch-badge danger" id="dc-wo-badge">—</span>
         <span class="dch-arrow">›</span>
@@ -141,14 +141,14 @@
           <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
         </div>
       </div>
-      <div class="dc-footer"><span class="dc-see-all" id="dc-wo-seeall" onclick="openDrillDown('overdue_work_orders','Open Work Orders')">See all →</span></div>
+      <div class="dc-footer"><span class="dc-see-all" id="dc-wo-seeall" onclick="openDrillDown('work_orders','Open Work Orders')">See all →</span></div>
     </div>
 
     <!-- Renewals Requiring Action card -->
     <div class="detail-card">
       <div class="detail-card-hd" onclick="openDrillDown('renewals','Renewal Pipeline')">
         <span class="dch-title">Renewals Requiring Action</span>
-        <span class="dch-badge warn" id="dc-ren-badge">—</span>
+        <span class="dch-badge warn" id="dc-ren-badge" onclick="event.stopPropagation(); openUnsignedRenewals()">—</span>
         <span class="dch-arrow">›</span>
       </div>
       <div class="dc-body">
@@ -161,7 +161,7 @@
 
     <!-- Lease Expiration Calendar card -->
     <div class="detail-card">
-      <div class="detail-card-hd" onclick="openDrillDown('needs_renewal','Renewals Needing Action')">
+      <div class="detail-card-hd" onclick="openAllUpcomingRenewals()">
         <span class="dch-title">Lease Expiration Calendar</span>
         <span class="dch-badge gray" id="dc-cal-badge">—</span>
         <span class="dch-arrow">›</span>
@@ -304,6 +304,13 @@ function renderKPIs(d) {
   const maintSat   = (d.maintenance_satisfaction != null && d.maintenance_satisfaction > 0) ? d.maintenance_satisfaction : null;
   const googleRat  = d.google_rating;
 
+  // Expiring lease counts from the Supabase renewal pipeline (same source as the renewal rate card)
+  const _pipe    = d.renewal_rate?.pipeline || [];
+  const _pipeDy  = r => { const dt = r.lease_end_date || ''; if (!dt) return null; return Math.ceil((new Date(dt) - new Date()) / 86400000); };
+  const _exp30   = _pipe.filter(r => { const dy = _pipeDy(r); return dy != null && dy >= 0 && dy <= 30; }).length;
+  const _exp60   = _pipe.filter(r => { const dy = _pipeDy(r); return dy != null && dy > 30  && dy <= 60; }).length;
+  const _exp90   = _pipe.filter(r => { const dy = _pipeDy(r); return dy != null && dy > 60  && dy <= 90; }).length;
+
   const kpis = [
     { key:'rent_collected',     name:'Rent Collected',       val:rentPct,
       drill:'rent_collected',
@@ -317,7 +324,8 @@ function renderKPIs(d) {
       sub: occPct != null ? (d.occupancy.occupied + ' / ' + d.occupancy.total + ' units') : '' },
     { key:'days_on_market',     name:'Days on Market',        val:domDays,
       drill:'vacant_units',
-      display: domDays != null ? Math.round(domDays) + ' days' : '—',
+      display: domDays != null ? Math.round(domDays) : '—',
+      unit: domDays != null ? 'days' : '',
       target:'Target ≤21 days',
       sub: '' },
     { key:'renewal_rate',       name:'Lease Renewal Rate',    val: renPct,
@@ -327,7 +335,8 @@ function renderKPIs(d) {
       sub: renRolling != null ? 'Rolling 12 mo: ' + fmtPct(renRolling) : 'Last 12 months' },
     { key:'speed_of_repair',    name:'Speed of Repair',       val:sorDays,
       drill:'overdue_work_orders',
-      display: sorDays != null ? sorDays + ' days' : '—',
+      display: sorDays != null ? sorDays : '—',
+      unit: sorDays != null ? 'days' : '',
       target:'Target ≤3 days',
       sub: (d.speed_of_repair?.open_count || 0) + ' open, ' + (d.speed_of_repair?.overdue_count || 0) + ' overdue' },
     { key:'maint_satisfaction', name:'Maint. Satisfaction',   val:maintSat,
@@ -340,19 +349,19 @@ function renderKPIs(d) {
       display: googleRat ? googleRat.toFixed(1) + ' ★' : '—',
       target:'Target ≥4.8★',
       sub: '' },
-    { key:'expiring_30',  name:'Leases Expiring ≤30 Days',  val: d.expiring_leases?.in_30 ?? null,
+    { key:'expiring_30',  name:'Leases Expiring ≤30 Days',  val: _exp30 || null,
       drill:'expiring_30',
-      display: d.expiring_leases?.in_30 != null ? d.expiring_leases.in_30 : '—',
+      display: _exp30,
       target:'Target: 0',
       sub: '' },
-    { key:'expiring_60',  name:'Leases Expiring ≤60 Days',  val: d.expiring_leases?.in_60 ?? null,
+    { key:'expiring_60',  name:'Leases Expiring ≤60 Days',  val: _exp60 || null,
       drill:'expiring_60',
-      display: d.expiring_leases?.in_60 != null ? d.expiring_leases.in_60 : '—',
+      display: _exp60,
       target:'Target: 0',
       sub: '' },
-    { key:'expiring_90',  name:'Leases Expiring ≤90 Days',  val: d.expiring_leases?.in_90 ?? null,
+    { key:'expiring_90',  name:'Leases Expiring ≤90 Days',  val: _exp90 || null,
       drill:'expiring_90',
-      display: d.expiring_leases?.in_90 != null ? d.expiring_leases.in_90 : '—',
+      display: _exp90,
       target:'Target: 0',
       sub: '' },
     { key:'resident_count', name:'Residents',       val: d.resident_count ?? null,
@@ -360,19 +369,21 @@ function renderKPIs(d) {
       display: d.resident_count != null ? d.resident_count : '—',
       target:'',
       sub: '' },
-    { key:'owner_count',    name:'Owners',          val: d.owner_count ?? null,
+    { key:'owner_count',    name:'Investors',       val: d.owner_count ?? null,
       drill:null,
       display: d.owner_count != null ? d.owner_count : '—',
       target:'',
       sub: '' },
     { key:'avg_tenancy',    name:'Avg Tenancy',     val: d.avg_tenancy_months || null,
       drill:'avg_tenancy',
-      display: d.avg_tenancy_months ? Math.round(d.avg_tenancy_months) + ' mo' : '—',
+      display: d.avg_tenancy_months ? Math.round(d.avg_tenancy_months) : '—',
+      unit: d.avg_tenancy_months ? 'mo' : '',
       target:'NARPM ≥26 mo',
       sub: '' },
     { key:'turn_time',      name:'Vacate-to-Lease Avg Time',       val: d.avg_turn_days || null,
       drill:'turn_time',
-      display: d.avg_turn_days ? Math.round(d.avg_turn_days) + ' days' : '—',
+      display: d.avg_turn_days ? Math.round(d.avg_turn_days) : '—',
+      unit: d.avg_turn_days ? 'days' : '',
       target:'Target ≤14 days',
       sub: '' },
   ];
@@ -386,10 +397,10 @@ function renderKPIs(d) {
     const cursorStyle = k.drill ? '' : 'style="cursor:default"';
     return `<div class="kpi-card ${color}" ${clickAttr} ${cursorStyle}>
       <div class="kpi-name">${esc(k.name)}</div>
-      <div class="kpi-value">${esc(k.display)}</div>
+      <div class="kpi-value">${esc(k.display)}${k.unit ? `<span class="kpi-unit"> ${esc(k.unit)}</span>` : ''}</div>
       <div class="kpi-target">${k.target}</div>
       ${k.sub ? `<div class="kpi-sub">${esc(k.sub)}</div>` : ''}
-      <div class="kpi-status">${statusLabel[color]}</div>
+      <div class="kpi-status">${color === 'gray' && k.val !== null ? '' : statusLabel[color]}</div>
     </div>`;
   }).join('');
 }
@@ -469,7 +480,7 @@ function renderAtRisk(d) {
   const el   = document.getElementById('compact-at-risk');
   _setBadge('dc-risk-badge', rows.length, rows.length === 0 ? 'clear' : 'warn');
   if (!rows.length) {
-    el.innerHTML = '<div class="compact-empty">No at-risk tenants flagged ✓</div>';
+    el.innerHTML = '<div class="compact-empty">No at-risk residents flagged ✓</div>';
     return;
   }
   const shown = rows.slice(0, 5);
@@ -478,7 +489,7 @@ function renderAtRisk(d) {
     const dot    = score >= 3 ? 'red' : 'yellow';
     const valCls = score >= 3 ? 'text-red' : 'text-yellow';
     const factors = (r.risk_factors || []).join(' · ') || (r.property || r.unit || '');
-    return `<div class="compact-item" onclick="openDrillDown('at_risk','At-Risk Tenants')">
+    return `<div class="compact-item" onclick="openDrillDown('at_risk','At-Risk Residents')">
       <div class="ci-dot ${dot}"></div>
       <div class="ci-body">
         <div class="ci-name">${esc(r.tenant_name)}</div>
@@ -510,7 +521,7 @@ function renderWOTable(showAll) {
     const dot      = critical ? 'red' : overdue ? 'yellow' : 'green';
     const valCls   = critical ? 'text-red' : overdue ? 'text-yellow' : '';
     const vendor   = r.vendor ? esc(trunc(r.vendor, 20)) : '<span style="color:#8A9099">Unassigned</span>';
-    return `<div class="compact-item" onclick="openDrillDown('overdue_work_orders','Open Work Orders')">
+    return `<div class="compact-item" onclick="openDrillDown('work_orders','Open Work Orders')">
       <div class="ci-dot ${dot}"></div>
       <div class="ci-body">
         <div class="ci-name">${esc(trunc(r.description, 55))}</div>
@@ -568,7 +579,7 @@ function renderRenewals(d) {
 // RENDER: LEASE EXPIRATION CALENDAR
 // ─────────────────────────────────────────────────────────
 function renderExpirationCalendar(d) {
-  const cal = (d.renewal_calendar && d.renewal_calendar.length) ? d.renewal_calendar : (d.lease_expiry_calendar || []);
+  const cal = (d.lease_expiry_calendar && d.lease_expiry_calendar.length) ? d.lease_expiry_calendar : (d.renewal_calendar || []);
   const el  = document.getElementById('compact-expiry-cal');
   const needsRenewal = (d.needs_renewal || []).length;
   const shownMonths  = cal.slice(0, 8);
@@ -640,7 +651,7 @@ function renderVacancyClock(d) {
   el.innerHTML = units.map(u => {
     const critical = u.days_vacant > 30;
     const dot      = critical ? 'red' : u.days_vacant > 14 ? 'yellow' : 'green';
-    const valCls   = critical ? 'text-red' : u.days_vacant > 14 ? 'text-yellow' : '';
+    const valCls   = critical ? 'text-red' : 'text-yellow';
     const parts    = [u.unit_label, u.property_name].filter(Boolean);
     const nameLine = parts.join(' — ');
     const lossStr  = u.total_loss > 0 ? fmt$(u.total_loss) + ' lost' : '';
@@ -748,21 +759,24 @@ async function loadAll(manual) {
   btn.disabled = true;
 
   try {
-    const bust = '?_=' + Date.now();
-    const [kpisRes, alertsRes, briefingRes] = await Promise.all([
-      fetch('/api/kpis' + bust),
-      fetch('/api/alerts'),
-      fetch('/api/briefing'),
-    ]);
+    // Manual refresh: POST /api/refresh flushes the KPI cache and clears today's briefing.
+    // Auto-load: GET /api/kpis uses the 15-minute server-side cache.
+    const kpisRes = manual
+      ? await fetch('/api/refresh', { method: 'POST' })
+      : await fetch('/api/kpis?_=' + Date.now());
 
     if (kpisRes.status === 401) { window.location.href = '/auth/login'; return; }
     if (!kpisRes.ok) throw new Error('KPI endpoint ' + kpisRes.status);
 
-    const [kpis, alertsData, briefingData] = await Promise.all([
+    // Fetch alerts and briefing after KPI refresh so briefing sees the cleared cache.
+    const [kpis, alertsRes, briefingRes] = await Promise.all([
       kpisRes.json(),
-      alertsRes.ok  ? alertsRes.json()   : Promise.resolve({alerts:[], count:0}),
-      briefingRes.ok ? briefingRes.json() : Promise.resolve({text:''}),
+      fetch('/api/alerts'),
+      fetch('/api/briefing'),
     ]);
+
+    const alertsData   = alertsRes.ok   ? await alertsRes.json()   : {alerts:[], count:0};
+    const briefingData = briefingRes.ok ? await briefingRes.json() : {text:''};
 
     lastKpis = kpis;
     document.getElementById('offline-banner').style.display = 'none';
@@ -856,18 +870,59 @@ function drawerGoBack() {
 }
 
 function openExpiryMonth(monthLabel, monthStart) {
-  // Filter by target_date (increaseEligibilityDate || endDate) — same field the calendar bars group by
-  const allRecords = (lastKpis && lastKpis.renewal_records) || [];
+  // Calendar bars come from lease_expiry_calendar (Supabase), bucketed by lease_end_date.
+  // Drill into expiry_pipeline (12-month window) so all months have data.
+  const pipeline = (lastKpis && lastKpis.expiry_pipeline) || [];
   const [msYear, msMonth] = monthStart.split('-').map(Number);
-  const records = allRecords.filter(r => {
-    const d = r.target_date || r.elig_date || r.end_date;
-    if (!d) return false;
-    const [dYear, dMonth] = d.split('-').map(Number);
-    return dYear === msYear && dMonth === msMonth;
-  });
+  const records = pipeline
+    .filter(r => {
+      const d = r.lease_end_date;
+      if (!d) return false;
+      const parts = d.split('-');
+      return parseInt(parts[0]) === msYear && parseInt(parts[1]) === msMonth;
+    })
+    .map(r => ({
+      tenant_name:   r.tenant_name,
+      property_name: r.property_name || r.unit_label,
+      end_date:      r.lease_end_date,
+      current_rent:  r.monthly_rent,
+      renewal_start: r.status === 'signed' ? (() => {
+        const [y, m, day] = r.lease_end_date.split('-').map(Number);
+        const dt = new Date(y, m - 1, day + 1);
+        return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+      })() : null,
+      renewal_rent: null,
+    }));
   openDrillDown('expiry_month', 'Eligible for Renewal — ' + monthLabel, {
     section: 'expiry_month',
     month_label: monthLabel,
+    records: records,
+  });
+}
+
+function openUnsignedRenewals() {
+  const pipeline = (lastKpis && lastKpis.renewal_rate && lastKpis.renewal_rate.pipeline) || [];
+  const unsigned = pipeline.filter(r => r.status !== 'signed' && r.status !== 'lost');
+  openDrillDown('renewals', 'Renewals Requiring Action', { records: unsigned });
+}
+
+function openAllUpcomingRenewals() {
+  const pipeline = (lastKpis && lastKpis.renewal_rate && lastKpis.renewal_rate.pipeline) || [];
+  const records = pipeline.map(r => ({
+    tenant_name:   r.tenant_name,
+    property_name: r.property_name || r.unit_label,
+    end_date:      r.lease_end_date,
+    current_rent:  r.monthly_rent,
+    renewal_start: r.status === 'signed' ? (() => {
+      const [y, m, day] = r.lease_end_date.split('-').map(Number);
+      const dt = new Date(y, m - 1, day + 1);
+      return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+    })() : null,
+    renewal_rent: null,
+  }));
+  openDrillDown('expiry_month', 'Upcoming Renewals — Next 90 Days', {
+    section: 'expiry_month',
+    month_label: 'Next 90 Days',
     records: records,
   });
 }
@@ -944,7 +999,7 @@ function renderDrawer(section, data) {
       dstat(rows.length, rows.length === 1 ? 'Lease Past Due' : 'Leases Past Due', rows.length > 0 ? 'red' : '', rows.length > 0 ? 'red' : '')
     );
     body.innerHTML = statsHtml + `<div class="table-wrap"><table>
-      <thead><tr><th>Tenant</th><th>Unit</th><th>Days Late</th><th>Rent Due</th><th>Fees Due</th><th>Balance</th></tr></thead>
+      <thead><tr><th>Resident</th><th>Unit</th><th>Days Late</th><th>Rent Due</th><th>Fees Due</th><th>Balance</th></tr></thead>
       <tbody>${rows.map(r => {
         const cls = r.days_late > 14 ? 'text-red' : r.days_late > 7 ? 'text-yellow' : '';
         return `<tr>
@@ -1072,7 +1127,7 @@ function renderDrawer(section, data) {
       dstat(notStarted, 'Not Contacted',   notStarted  ? 'red'    : '', notStarted  ? 'red'    : ''),
       dstat(fmt$(rentAtRisk) + '/mo', 'Rent Unsigned', rentAtRisk > 0 ? 'red' : '', rentAtRisk > 0 ? 'red' : '')
     ) + `<div class="table-wrap"><table>
-        <thead><tr><th>Tenant</th><th>Unit</th><th>Lease Ends</th><th>Days Left</th><th>Status</th></tr></thead>
+        <thead><tr><th>Resident</th><th>Unit</th><th>Lease Ends</th><th>Days Left</th><th>Status</th></tr></thead>
         <tbody>${rows.map(r => {
           const days = daysFromNow(r.lease_end_date);
           const dCls = days != null && days < 30 ? 'text-red' : days < 60 ? 'text-yellow' : '';
@@ -1228,9 +1283,9 @@ function renderDrawer(section, data) {
             <div style="font-size:13px;color:var(--muted);line-height:1.6">Average renewal rate across the last 12 completed months${r12tot > 0 ? ' (' + r12tot + ' total eligible)' : ''}.</div>
           </div>
         </div>`
-      + `<div class="drawer-note">Monthly rate = leases that started this month where tenant has been there 180+ days (renewals written) ÷ leases that expired or gave notice last month. Chart shows last 24 months; gray bars = upcoming expirations.</div>`
+      + `<div class="drawer-note">Monthly rate = leases that started this month where resident has been there 180+ days (renewals written) ÷ leases that expired or gave notice last month. Chart shows last 24 months; gray bars = upcoming expirations.</div>`
       + (rows.length ? `<div class="table-wrap"><table>
-        <thead><tr><th>Tenant</th><th>Unit</th><th>Renewal Date</th><th>Rent</th><th>Renewal Written?</th></tr></thead>
+        <thead><tr><th>Resident</th><th>Unit</th><th>Renewal Date</th><th>Rent</th><th>Renewal Written?</th></tr></thead>
         <tbody>${rows.map(r => {
           const outcome = r.renewed
             ? `<span class="badge badge-green">Yes</span>`
@@ -1266,7 +1321,7 @@ function renderDrawer(section, data) {
       dstat(fmt$(rentAtRisk) + '/mo', 'Rent at Risk', rentAtRisk > 0 ? 'red' : '', rentAtRisk > 0 ? 'red' : '')
     ) + `<div class="drawer-note" style="margin-bottom:12px">Goal: 0 leases expiring without a signed renewal — ${goalMet ? '✓ On Target' : notSigned + ' still unsigned, needs attention'}</div>`
     + `<div class="table-wrap"><table>
-        <thead><tr><th>Tenant</th><th>Unit</th><th>Lease Ends</th><th>Days Left</th><th>Rent/Mo</th><th>Status</th></tr></thead>
+        <thead><tr><th>Resident</th><th>Unit</th><th>Lease Ends</th><th>Days Left</th><th>Rent/Mo</th><th>Status</th></tr></thead>
         <tbody>${rows.map(r => {
           const days = daysFromNow(r.lease_end_date);
           const dCls = days != null && days <= 30 ? 'text-red' : 'text-yellow';
@@ -1297,11 +1352,11 @@ function renderDrawer(section, data) {
     const avgColor = avg == null ? '' : avg >= 24 ? 'green' : avg >= 12 ? 'yellow' : 'red';
     body.innerHTML = dstats(
       dstat(avg != null ? Math.round(avg) + ' mo' : '—', 'Avg Tenancy Length', avgColor, avgColor),
-      dstat(active, 'Active Tenants', '', ''),
+      dstat(active, 'Active Residents', '', ''),
       dstat(closed, 'Closed (Last 2 Yrs)', '', '')
     ) + (rows.length ? `<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Longest Tenancies</div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Tenant</th><th>Unit</th><th>Move-In</th><th>Tenancy</th><th>Status</th></tr></thead>
+      <thead><tr><th>Resident</th><th>Unit</th><th>Move-In</th><th>Tenancy</th><th>Status</th></tr></thead>
       <tbody>${rows.slice(0,20).map(r => `<tr>
         <td>${esc(r.tenant_name||'—')}</td>
         <td class="font-mono text-muted">${esc(r.unit_label||'')}</td>
@@ -1323,7 +1378,7 @@ function renderDrawer(section, data) {
       rows.length ? dstat(Math.round(Math.min(...rows.map(r=>r.gap_days||0))) + ' days', 'Shortest Vacancy', 'green', 'green') : '',
       rows.length ? dstat(Math.round(Math.max(...rows.map(r=>r.gap_days||0))) + ' days', 'Longest Vacancy',  'red',   'red') : ''
     ) + (rows.length ? `<div class="table-wrap"><table>
-      <thead><tr><th>Unit</th><th>Previous Tenant Out</th><th>New Tenant In</th><th>Days Vacant</th></tr></thead>
+      <thead><tr><th>Unit</th><th>Previous Resident Out</th><th>New Resident In</th><th>Days Vacant</th></tr></thead>
       <tbody>${rows.map(r => {
         const cls = r.gap_days <= 14 ? 'text-green' : r.gap_days <= 30 ? 'text-yellow' : 'text-red';
         return `<tr>
@@ -1351,7 +1406,7 @@ function renderDrawer(section, data) {
       dstat(pending,      'Not Yet Written',  pending > 0 ? 'yellow' : '', pending > 0 ? 'yellow' : ''),
       dstat(fmt$(totalCurrentRent) + '/mo', 'Monthly Rent', '', '')
     ) + `<div class="table-wrap"><table>
-      <thead><tr><th>Tenant</th><th>Property</th><th>Due Date</th><th>Current Rent</th><th>Renewal Written?</th><th>New Rent</th></tr></thead>
+      <thead><tr><th>Resident</th><th>Property</th><th>Due Date</th><th>Current Rent</th><th>Renewal Written?</th><th>New Rent</th></tr></thead>
       <tbody>${rows.map(r => {
         const dueDate = r.target_date || r.elig_date || r.end_date || '';
         const outcome = r.renewal_start
@@ -1396,15 +1451,15 @@ function renderDrawer(section, data) {
 
   if (section === 'at_risk') {
     const rows = data.records || [];
-    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No at-risk tenants flagged ✓</div>'; return; }
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No at-risk residents flagged ✓</div>'; return; }
     const highRisk = rows.filter(r => (r.risk_level || '').toUpperCase() === 'HIGH' || r.score >= 4).length;
     const medRisk  = rows.filter(r => (r.risk_level || '').toUpperCase() === 'MEDIUM' || (r.score >= 2 && r.score < 4)).length;
     body.innerHTML = dstats(
-      dstat(rows.length,  rows.length === 1 ? 'At-Risk Tenant' : 'At-Risk Tenants', rows.length > 0 ? 'yellow' : '', rows.length > 0 ? 'yellow' : ''),
+      dstat(rows.length,  rows.length === 1 ? 'At-Risk Resident' : 'At-Risk Residents', rows.length > 0 ? 'yellow' : '', rows.length > 0 ? 'yellow' : ''),
       highRisk ? dstat(highRisk, 'High Risk', 'red',    'red')    : '',
       medRisk  ? dstat(medRisk,  'Medium Risk', 'yellow', 'yellow') : ''
     ) + `<div class="table-wrap"><table>
-      <thead><tr><th>Tenant</th><th>Property</th><th>Risk Level</th><th>Open WOs</th></tr></thead>
+      <thead><tr><th>Resident</th><th>Property</th><th>Risk Level</th><th>Open WOs</th></tr></thead>
       <tbody>${rows.map(r => {
         const lvl      = (r.risk_level || (r.score >= 4 ? 'High' : 'Medium')).toUpperCase();
         const isHigh   = lvl === 'HIGH';
@@ -1421,7 +1476,7 @@ function renderDrawer(section, data) {
         </tr>`;
       }).join('')}</tbody>
       <tfoot><tr style="border-top:2px solid var(--border);font-weight:700">
-        <td colspan="4" style="color:var(--muted)">${rows.length} tenant${rows.length !== 1 ? 's' : ''} flagged — based on open maintenance history</td>
+        <td colspan="4" style="color:var(--muted)">${rows.length} resident${rows.length !== 1 ? 's' : ''} flagged — based on open maintenance history</td>
       </tr></tfoot>
     </table></div>`;
     return;

@@ -272,6 +272,12 @@ body {
 .kpi-card.red    .kpi-value,
 .kpi-card.gray   .kpi-value { color: #1A1D23; }
 
+.kpi-value .kpi-unit {
+  font-size: 0.5em;
+  font-weight: 600;
+  vertical-align: middle;
+  letter-spacing: 0;
+}
 .kpi-target { font-size: 11px; color: #8A9099; font-family: var(--font); }
 .kpi-sub    { font-size: 11px; color: #8A9099; font-family: var(--font); }
 .kpi-status {
