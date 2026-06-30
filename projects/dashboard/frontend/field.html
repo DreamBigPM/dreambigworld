@@ -84,6 +84,7 @@
   <img id="header-logo" src="/logo.png" alt="Dream Big PM" style="height:36px;object-fit:contain">
   <div class="header-right">
     <div id="sync-ts" style="font-size:12px;color:var(--muted)">Loading&hellip;</div>
+    <button id="btn-refresh" onclick="loadAll(true)"><span class="spin-icon">&#8635;</span> Refresh</button>
     <span class="role-badge">Field Services</span>
     <div class="header-avatar" id="user-initials">—</div>
     <form method="post" action="/auth/logout" style="margin:0">
@@ -120,6 +121,84 @@
     <div class="kpi-card gray" id="kc-insp-overdue"><div class="kpi-name">Inspections Overdue</div><div class="kpi-value">—</div></div>
     <div class="kpi-card gray" id="kc-insp-due-soon"><div class="kpi-name">Inspections Due Soon</div><div class="kpi-value">—</div></div>
     <div class="kpi-card gray" id="kc-insp-current"><div class="kpi-name">Inspections Current</div><div class="kpi-value">—</div></div>
+  </div>
+
+  <!-- CLIENT GROWTH -->
+  <div class="section-label" style="margin-top:20px">Client Growth</div>
+  <div style="display:flex;gap:14px;justify-content:center;align-items:stretch;flex-wrap:wrap;margin-bottom:8px">
+  <div class="detail-card" id="field-churn-card" style="cursor:pointer;flex:0 0 320px" onclick="openChurnDrillDown()">
+    <div class="detail-card-hd">
+      <span class="dch-title">Client Churn</span>
+      <span class="dch-badge" id="field-churn-badge">—</span>
+      <span class="dch-arrow">›</span>
+    </div>
+    <div class="dc-body" style="padding:16px 18px;display:flex;align-items:center;gap:32px">
+      <div>
+        <div id="field-churn-pct-big" style="font-size:44px;font-weight:800;line-height:1;color:var(--text)">—</div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px">YTD Churn</div>
+      </div>
+      <div id="field-churn-sub" style="font-size:13px;color:var(--muted);line-height:1.8">Loading…</div>
+    </div>
+    <div class="dc-footer" style="display:flex;justify-content:space-between">
+      <span class="dc-see-all" onclick="event.stopPropagation();openChurnDrillDown()">View history →</span>
+    </div>
+  </div>
+
+  <div class="detail-card" style="flex:0 0 192px">
+    <div class="detail-card-hd" style="cursor:default">
+      <span class="dch-title">Doors Added</span>
+      <span class="dch-badge clear" id="field-doors-added-badge">—</span>
+    </div>
+    <div class="dc-body" style="padding:16px 18px">
+      <div id="field-doors-added-big" style="font-size:44px;font-weight:800;line-height:1;color:#16a34a">—</div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px">This Year</div>
+    </div>
+  </div>
+
+  <div class="detail-card" style="flex:0 0 192px">
+    <div class="detail-card-hd" style="cursor:default">
+      <span class="dch-title">Doors Lost</span>
+      <span class="dch-badge danger" id="field-doors-lost-badge">—</span>
+    </div>
+    <div class="dc-body" style="padding:16px 18px">
+      <div id="field-doors-lost-big" style="font-size:44px;font-weight:800;line-height:1;color:#dc2626">—</div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px">This Year</div>
+    </div>
+  </div>
+  </div>
+
+  <!-- RENEWAL CALENDAR & PIPELINE -->
+  <div class="section-label" style="margin-top:20px">Lease Renewals</div>
+  <div class="detail-card-grid">
+
+    <!-- Renewals Requiring Action card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" onclick="openDrillDown('renewals','Renewal Pipeline')">
+        <span class="dch-title">Renewals Requiring Action</span>
+        <span class="dch-badge warn" id="field-dc-ren-badge">—</span>
+        <span class="dch-arrow">›</span>
+      </div>
+      <div class="dc-body">
+        <div id="field-compact-renewals" class="compact-list">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+      <div class="dc-footer"><span class="dc-see-all" id="field-dc-ren-seeall" onclick="openDrillDown('renewals','Renewal Pipeline')">See all →</span></div>
+    </div>
+
+    <!-- Lease Expiration Calendar card -->
+    <div class="detail-card">
+      <div class="detail-card-hd" style="cursor:default">
+        <span class="dch-title">Lease Expiration Calendar</span>
+        <span class="dch-badge gray" id="field-dc-cal-badge">—</span>
+      </div>
+      <div class="dc-body">
+        <div id="field-compact-expiry-cal" class="compact-list" style="padding:4px 0;">
+          <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- DAILY ZERO GOALS -->
@@ -176,7 +255,7 @@
   </div>
 
   <!-- INSPECTION SCHEDULE -->
-  <div class="section-label" style="margin-top:20px">Inspection Schedule</div>
+  <div class="section-label" style="margin-top:20px;cursor:pointer" onclick="openDrillDown('inspections','Inspection Schedule')">Inspection Schedule ›</div>
   <div class="card" style="padding: 18px 20px">
     <div id="insp-summary-pills" class="insp-summary"></div>
     <div class="insp-container">
@@ -216,9 +295,29 @@ const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
 const fmtDate = s => { if (!s || s==='Never') return 'Never'; try { return new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); } catch { return s; }};
 
 let lastKpis = null;
+let lastChurn = null;
 let allOpenWOs = [];
 let allOverdueWOs = [];
 let allInspections = [];
+
+/* ── shared badge helper ── */
+function _setBadge(id, text, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'dch-badge ' + (cls || '');
+}
+
+/* ── days from now helper ── */
+function daysFromNow(dateStr) {
+  if (!dateStr) return null;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  return Math.round((d - now) / 86400000);
+}
+
+/* ── fmt$ helper (dollars) ── */
+function fmt$(n) { if (n == null) return '—'; return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}); }
 
 /* ── KPI color ── */
 const kpiColor = (k, v) => {
@@ -277,7 +376,7 @@ function renderWOList(containerId, badgeId, wos, max=5) {
   const rows = wos.slice(0, max).map(wo => {
     const pri = (wo.priority||'').toLowerCase();
     const dotCls = pri === 'high' ? 'high' : pri === 'medium' ? 'medium' : 'low';
-    return `<div class="compact-item" style="cursor:pointer" onclick="openWODetail(${JSON.stringify(wo.wo_id)})">
+    return `<div class="compact-item" style="cursor:pointer" onclick="openWODetail(${Number(wo.wo_id) || 0})">
       <div class="ci-dot" style="background:${dotCls==='high'?'#DC2626':dotCls==='medium'?'#D97706':'#8A9099'}"></div>
       <div class="ci-body">
         <div class="ci-name">${esc(trunc(wo.description,45))}</div>
@@ -345,36 +444,55 @@ function renderInspections(list) {
 /* ── Drawer system ── */
 let _drawerStack = [];
 
-function openDrillDown(section, title) {
-  _drawerStack.push({ section, title });
-  _renderDrawer(section, title);
+function openDrillDown(section, title, localData) {
+  const isOpen = document.getElementById('drill-drawer').classList.contains('open');
+  if (isOpen) {
+    _drawerStack.push({
+      title: document.getElementById('drawer-title').textContent,
+      html:  document.getElementById('drawer-body').innerHTML,
+    });
+  } else {
+    _drawerStack = [];
+  }
+  document.getElementById('drawer-back').style.display = _drawerStack.length ? 'inline-flex' : 'none';
+  document.getElementById('drawer-title').textContent = title;
+  document.getElementById('drawer-body').innerHTML = '<div class="drawer-loading">Loading&hellip;</div>';
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('drill-drawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (localData) { _renderDrawer(section, localData); return; }
+  // For sections backed by local KPI data, render immediately
+  _renderDrawer(section, null);
 }
 
 function drawerGoBack() {
-  _drawerStack.pop();
-  if (_drawerStack.length) {
-    const prev = _drawerStack[_drawerStack.length - 1];
-    _renderDrawer(prev.section, prev.title);
-  } else {
-    closeDrillDown();
-  }
+  if (!_drawerStack.length) return;
+  const prev = _drawerStack.pop();
+  document.getElementById('drawer-title').textContent = prev.title;
+  document.getElementById('drawer-body').innerHTML   = prev.html;
+  document.getElementById('drawer-back').style.display = _drawerStack.length ? 'inline-flex' : 'none';
 }
 
 function closeDrillDown() {
   _drawerStack = [];
   document.getElementById('drawer-overlay').classList.remove('open');
   document.getElementById('drill-drawer').classList.remove('open');
+  document.getElementById('drawer-back').style.display = 'none';
+  document.body.style.overflow = '';
 }
 
-function _renderDrawer(section, title) {
-  document.getElementById('drawer-overlay').classList.add('open');
-  document.getElementById('drill-drawer').classList.add('open');
-  document.getElementById('drawer-title').textContent = title;
-  document.getElementById('drawer-back').style.display = _drawerStack.length > 1 ? '' : 'none';
-  const body = document.getElementById('drawer-body');
-  body.innerHTML = '<div class="drawer-loading">Loading…</div>';
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrillDown(); });
 
-  if (!lastKpis) return;
+function _renderDrawer(section, localData) {
+  const body = document.getElementById('drawer-body');
+
+  // If localData passed (e.g. from openDrillDown with pre-built data), use it
+  if (localData && localData.records !== undefined) {
+    _renderDrawerFromData(section, localData, body);
+    return;
+  }
+
+  if (!lastKpis) { body.innerHTML = '<div class="drawer-loading">No data loaded yet.</div>'; return; }
   const sor = lastKpis.speed_of_repair || {};
 
   if (section === 'work_orders') {
@@ -394,7 +512,168 @@ function _renderDrawer(section, title) {
     return;
   }
 
+  if (section === 'renewals') {
+    const rows = (lastKpis.renewal_rate?.pipeline || []).slice()
+      .sort((a,b) => new Date(a.lease_end_date) - new Date(b.lease_end_date));
+    _renderRenewalsDrawer(body, rows);
+    return;
+  }
+
+  if (section === 'churn') {
+    _renderChurnDrawer(localData || lastChurn || { connected: false, history: [] }, body);
+    return;
+  }
+
   body.innerHTML = '<div class="drawer-loading">No data for this section.</div>';
+}
+
+function _renderDrawerFromData(section, data, body) {
+  if (section === 'renewals') {
+    _renderRenewalsDrawer(body, data.records || []);
+    return;
+  }
+  if (section === 'churn') {
+    _renderChurnDrawer(data, body);
+    return;
+  }
+  body.innerHTML = '<div class="drawer-loading">No data for this section.</div>';
+}
+
+function _renderRenewalsDrawer(body, rows) {
+  if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No renewals in pipeline</div>'; return; }
+  const signed     = rows.filter(r => r.status === 'signed').length;
+  const lost       = rows.filter(r => r.status === 'lost').length;
+  const inProgress = rows.filter(r => r.status === 'in_negotiation' || r.status === 'contacted').length;
+  const notStarted = rows.filter(r => r.status === 'not_started').length;
+  const rentAtRisk = rows.filter(r => r.status !== 'signed').reduce((s,r) => s + (r.monthly_rent||0), 0);
+  const dStat = (val, label, vc, ac) => {
+    const vcCls = vc ? ' c-' + vc : ''; const acCls = ac ? ' accent-' + ac : '';
+    return `<div class="dstat${acCls}"><div class="dstat-val${vcCls}">${val}</div><div class="dstat-label">${label}</div></div>`;
+  };
+  const statsHtml = `<div class="drawer-stats">
+    ${dStat(rows.length, 'In Pipeline', '', '')}
+    ${dStat(signed, 'Signed', 'green', 'green')}
+    ${dStat(inProgress, 'In Progress', inProgress ? 'yellow' : '', inProgress ? 'yellow' : '')}
+    ${dStat(notStarted, 'Not Contacted', notStarted ? 'red' : '', notStarted ? 'red' : '')}
+    ${dStat(fmt$(rentAtRisk) + '/mo', 'Rent Unsigned', rentAtRisk > 0 ? 'red' : '', rentAtRisk > 0 ? 'red' : '')}
+  </div>`;
+  const statusMap = {not_started:'Not Started',contacted:'Contacted',in_negotiation:'In Negotiation',signed:'Signed',lost:'Lost'};
+  body.innerHTML = statsHtml + `<div class="table-wrap"><table>
+    <thead><tr><th>Resident</th><th>Unit</th><th>Lease Ends</th><th>Days Left</th><th>Status</th></tr></thead>
+    <tbody>${rows.map(r => {
+      const days = daysFromNow(r.lease_end_date);
+      const dCls = days != null && days < 30 ? 'text-red' : days != null && days < 60 ? 'text-yellow' : '';
+      const dDisp = days == null ? '—' : days <= 0 ? '<span class="text-red">Expired</span>' : days + ' days';
+      const sBadge = r.status === 'signed' ? 'badge-green' : r.status === 'lost' ? 'badge-red' : r.status === 'not_started' ? 'badge-gray' : 'badge-yellow';
+      return `<tr>
+        <td>${esc(r.tenant_name)}</td>
+        <td class="font-mono text-muted">${esc(r.unit_label||'')}</td>
+        <td class="text-muted">${fmtDate(r.lease_end_date)}</td>
+        <td class="${dCls} font-mono">${dDisp}</td>
+        <td><span class="badge ${sBadge}">${statusMap[r.status]||r.status}</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+    <tfoot><tr style="border-top:2px solid var(--border);font-weight:700">
+      <td colspan="4" style="color:var(--muted)">${rows.length} total &nbsp;·&nbsp; <span class="text-green">${signed} signed</span> &nbsp;·&nbsp; <span class="text-red">${lost} lost</span></td>
+      <td class="font-mono text-red">${fmt$(rentAtRisk)}/mo at risk</td>
+    </tr></tfoot>
+  </table></div>`;
+}
+
+function _renderChurnDrawer(data, body) {
+  if (!data || !data.connected) {
+    body.innerHTML = '<div class="drawer-empty">Google Sheets not connected. Add GOOGLE_SERVICE_ACCOUNT_JSON to .env.</div>';
+    return;
+  }
+  const history = data.history || [];
+  const avgPct  = data.average_churn_pct;
+  let projHtml = '';
+  const curEntry = history.find(h => h.year === data.current_year);
+  if (curEntry && curEntry.offboards > 0) {
+    const now = new Date();
+    const yearStart = new Date(data.current_year, 0, 1);
+    const yearEnd   = new Date(data.current_year, 11, 31);
+    const daysElapsed   = Math.max(1, Math.floor((now - yearStart) / 86400000) + 1);
+    const daysInYear    = Math.floor((yearEnd - yearStart) / 86400000) + 1;
+    const daysRemaining = Math.max(0, daysInYear - daysElapsed);
+    const dailyRate     = curEntry.offboards / daysElapsed;
+    const projOffboards = Math.round((curEntry.offboards + dailyRate * daysRemaining) * 10) / 10;
+    const projPct       = (projOffboards / curEntry.start_doors * 100);
+    const projColor     = projPct <= 10 ? '#16a34a' : projPct <= 15 ? '#d97706' : '#dc2626';
+    const onOff         = projPct <= 10 ? 'on track' : 'above target';
+    projHtml = `<div style="margin:12px 0 4px;padding:12px 16px;background:#f0f9f4;border:1px solid #d1fae5;border-radius:8px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:6px">${data.current_year} Annualized Projection</div>
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <span style="font-size:28px;font-weight:700;color:${projColor}">${projPct.toFixed(1)}%</span>
+        <span style="font-size:13px;color:#6b7280">${onOff} for ≤10% target</span>
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-top:6px">
+        ${curEntry.offboards} lost so far · ${daysElapsed} days elapsed · ${daysRemaining} days left ·
+        ${dailyRate.toFixed(3)}/day → ~${projOffboards} projected full-year losses out of ${curEntry.start_doors} doors
+      </div>
+    </div>`;
+  }
+  const dStat = (val, label, vc, ac) => {
+    const vcCls = vc ? ' c-' + vc : ''; const acCls = ac ? ' accent-' + ac : '';
+    return `<div class="dstat${acCls}"><div class="dstat-val${vcCls}">${val}</div><div class="dstat-label">${label}</div></div>`;
+  };
+  const statsHtml = `<div class="drawer-stats">
+    ${dStat(data.current_churn_pct != null ? data.current_churn_pct.toFixed(2) + '%' : '—',
+      'YTD Churn ' + data.current_year,
+      data.current_churn_pct == null ? '' : data.current_churn_pct <= 10 ? 'green' : data.current_churn_pct <= 15 ? 'yellow' : 'red',
+      data.current_churn_pct == null ? '' : data.current_churn_pct <= 10 ? 'green' : data.current_churn_pct <= 15 ? 'yellow' : 'red')}
+    ${dStat(avgPct != null ? avgPct.toFixed(2) + '%' : '—', 'All-Time Avg', '', '')}
+    ${dStat(data.current_door_count ?? '—', 'Doors Today', '', '')}
+  </div>`;
+  const chartHtml = _churnBarChart(history, avgPct);
+  const tRows = history.map(h => {
+    const color = h.churn_pct < 10 ? 'text-green' : h.churn_pct <= 20 ? 'text-yellow' : 'text-red';
+    return `<tr>
+      <td class="font-mono">${h.year}</td><td class="font-mono">${h.start_doors}</td>
+      <td class="font-mono text-green">+${h.adds}</td><td class="font-mono text-red">-${h.offboards}</td>
+      <td class="font-mono">${h.end_doors}</td><td class="font-mono ${color}">${h.churn_pct.toFixed(2)}%</td>
+    </tr>`;
+  }).join('');
+  body.innerHTML = statsHtml + projHtml + chartHtml + `<div class="table-wrap" style="margin-top:20px"><table>
+    <thead><tr><th>Year</th><th>Start Doors</th><th>Adds</th><th>Offboards</th><th>End Doors</th><th>Churn %</th></tr></thead>
+    <tbody>${tRows}</tbody>
+  </table></div>
+  <div style="font-size:12px;color:var(--muted);margin-top:12px;padding:8px 12px;background:#f9f8f6;border-radius:6px">
+    Your target: ≤10% annual churn · NARPM benchmark: &lt;15%
+  </div>`;
+}
+
+function _churnBarChart(history, avgPct) {
+  if (!history.length) return '';
+  const W = 560, H = 220, padL = 40, padR = 20, padT = 24, padB = 32;
+  const chartW = W - padL - padR, chartH = H - padT - padB;
+  const maxPct = Math.max(...history.map(h => h.churn_pct), avgPct || 0, 5);
+  const scaleY = v => chartH - (v / (maxPct * 1.15)) * chartH;
+  const barW = Math.floor(chartW / history.length * 0.55);
+  const gap  = chartW / history.length;
+  const bars = history.map((h, i) => {
+    const x = padL + i * gap + (gap - barW) / 2;
+    const barH = Math.max(2, chartH - scaleY(h.churn_pct));
+    const y    = padT + scaleY(h.churn_pct);
+    const fill = h.churn_pct < 10 ? '#16a34a' : h.churn_pct <= 20 ? '#d97706' : '#dc2626';
+    return `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="${fill}" rx="3"/>
+      <text x="${x + barW / 2}" y="${y - 4}" text-anchor="middle" font-size="11" fill="#374151">${h.churn_pct.toFixed(1)}%</text>
+      <text x="${x + barW / 2}" y="${H - padB + 14}" text-anchor="middle" font-size="11" fill="#6b7280">${h.year}</text>`;
+  }).join('');
+  let avgLine = '';
+  if (avgPct != null) {
+    const ay = padT + scaleY(avgPct);
+    avgLine = `<line x1="${padL}" y1="${ay}" x2="${W - padR}" y2="${ay}" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="${W - padR + 2}" y="${ay + 4}" font-size="10" fill="#9ca3af">Avg</text>`;
+  }
+  const targetY = padT + scaleY(10);
+  const targetLine = `<line x1="${padL}" y1="${targetY}" x2="${W - padR}" y2="${targetY}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text x="${W - padR + 2}" y="${targetY + 4}" font-size="10" fill="#dc2626">10%</text>`;
+  return `<div style="overflow-x:auto;margin:16px 0">
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block">
+      ${bars}${avgLine}${targetLine}
+    </svg>
+  </div>`;
 }
 
 function renderDrawerWOList(body, wos, type) {
@@ -552,21 +831,168 @@ window._toggleBriefingCheck = function(idx) {
   if (box)  { box.classList.toggle('done', isDone); box.textContent = isDone ? '✓' : ''; }
 };
 
+/* ── Churn ── */
+function churnColor(pct) {
+  if (pct == null) return '';
+  if (pct < 10) return '#16a34a';
+  if (pct <= 20) return '#d97706';
+  return '#dc2626';
+}
+
+function churnBadgeClass(pct) {
+  if (pct == null) return '';
+  if (pct < 10) return 'clear';
+  if (pct <= 20) return 'warn';
+  return 'danger';
+}
+
+function renderChurn(data) {
+  lastChurn = data;
+  if (!data || !data.connected) {
+    document.getElementById('field-churn-pct-big').textContent = '—';
+    document.getElementById('field-churn-badge').textContent   = 'Not connected';
+    document.getElementById('field-churn-sub').textContent     = 'Churn data unavailable';
+    return;
+  }
+  const pct = data.current_churn_pct;
+  const big = document.getElementById('field-churn-pct-big');
+  big.textContent  = pct != null ? pct.toFixed(2) + '%' : '—';
+  big.style.color  = churnColor(pct);
+  const badge = document.getElementById('field-churn-badge');
+  badge.textContent = pct != null ? pct.toFixed(2) + '%' : '—';
+  badge.className   = 'dch-badge ' + churnBadgeClass(pct);
+  const sub = document.getElementById('field-churn-sub');
+  sub.innerHTML = [
+    `<strong>${data.current_offboards ?? 0}</strong> offboards / <strong>${data.current_start_doors ?? 0}</strong> doors at Jan 1`,
+    `<strong>${data.current_door_count ?? 0}</strong> doors today`,
+  ].join(' &nbsp;·&nbsp; ');
+  const adds = data.current_adds ?? 0;
+  const lost = data.current_offboards ?? 0;
+  document.getElementById('field-doors-added-big').textContent  = adds;
+  document.getElementById('field-doors-added-badge').textContent = adds;
+  document.getElementById('field-doors-lost-big').textContent   = lost;
+  document.getElementById('field-doors-lost-badge').textContent = lost;
+}
+
+function openChurnDrillDown() {
+  openDrillDown('churn', 'Client Churn', lastChurn || { connected: false, history: [] });
+}
+
+/* ── Renewal pipeline compact list ── */
+function renderRenewals(d) {
+  const all = (d.renewal_rate?.pipeline || []).slice()
+    .sort((a, b) => new Date(a.lease_end_date) - new Date(b.lease_end_date));
+  const rows = all.filter(r => r.status !== 'signed' && r.status !== 'lost');
+  const el = document.getElementById('field-compact-renewals');
+  _setBadge('field-dc-ren-badge', rows.length, rows.length === 0 ? 'clear' : 'warn');
+  const seeAll = document.getElementById('field-dc-ren-seeall');
+  if (seeAll) seeAll.textContent = all.length ? 'See full pipeline (' + all.length + ') →' : 'See full pipeline →';
+  if (!el) return;
+  if (!rows.length) {
+    el.innerHTML = '<div class="compact-empty">All renewals signed or no pipeline yet ✓</div>';
+    return;
+  }
+  el.innerHTML = rows.slice(0, 5).map(r => {
+    const days    = daysFromNow(r.lease_end_date);
+    const dot     = days == null ? 'gray' : days <= 0 ? 'red' : days <= 30 ? 'red' : days <= 60 ? 'yellow' : 'green';
+    const valCls  = days != null && days <= 30 ? 'text-red' : days != null && days <= 60 ? 'text-yellow' : '';
+    const daysDisp = days == null ? '—' : days <= 0 ? 'Expired' : days + 'd';
+    const statusBadge = r.status === 'contacted' ? ' &nbsp;·&nbsp; <span style="color:#D97706">Contacted</span>'
+      : r.status === 'in_negotiation' ? ' &nbsp;·&nbsp; <span style="color:#2563EB">Negotiating</span>' : '';
+    return `<div class="compact-item" style="cursor:pointer" onclick="openDrillDown('renewals','Renewal Pipeline')">
+      <div class="ci-dot ${dot}"></div>
+      <div class="ci-body">
+        <div class="ci-name">${esc(r.tenant_name)}</div>
+        <div class="ci-sub">${esc(r.unit_label)} &nbsp;·&nbsp; ${fmtDate(r.lease_end_date)} &nbsp;·&nbsp; ${fmt$(r.monthly_rent)}/mo${statusBadge}</div>
+      </div>
+      <div class="ci-val ${valCls}">${daysDisp}</div>
+      <div class="ci-arrow">›</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Lease expiration calendar ── */
+function renderExpirationCalendar(d) {
+  const rawCal = (d.lease_expiry_calendar && d.lease_expiry_calendar.length) ? d.lease_expiry_calendar : (d.renewal_calendar || []);
+  const el = document.getElementById('field-compact-expiry-cal');
+  const needsRenewal = (d.needs_renewal || []).length;
+  const byKey = {};
+  rawCal.forEach(m => { if (m.month_start) byKey[m.month_start] = m; });
+  const cal = [];
+  const now = new Date();
+  for (let i = 0; i < 13; i++) {
+    const y = now.getFullYear() + Math.floor((now.getMonth() + i) / 12);
+    const mo = (now.getMonth() + i) % 12;
+    const key = `${y}-${String(mo + 1).padStart(2, '0')}-01`;
+    const monthLabel = new Date(y, mo, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    cal.push(byKey[key] || { month_start: key, month_label: monthLabel, count: 0 });
+  }
+  const totalExps = cal.reduce((s, m) => s + (m.count || 0), 0);
+  _setBadge('field-dc-cal-badge', needsRenewal > 0 ? needsRenewal + ' need action' : totalExps + ' upcoming', needsRenewal > 0 ? 'warn' : 'gray');
+  if (!el) return;
+  if (!rawCal.length && totalExps === 0) {
+    el.innerHTML = '<div class="compact-empty">No upcoming expirations on record</div>';
+    return;
+  }
+  const maxCount = Math.max(...cal.map(m => m.count), 1);
+  el.innerHTML = cal.map(m => {
+    const pct    = Math.max(Math.round((m.count / maxCount) * 100), 4);
+    const cls    = m.count >= 6 ? 'red' : m.count >= 3 ? 'yellow' : 'green';
+    const valCls = m.count >= 6 ? 'text-red' : m.count >= 3 ? 'text-yellow' : '';
+    const monthStart = m.month_start || '';
+    const clickable  = m.count > 0 ? `style="cursor:pointer;padding:5px 14px" onclick='openExpiryMonth(${JSON.stringify(m.month_label)},${JSON.stringify(monthStart)})'` : `style="padding:5px 14px"`;
+    return `<div class="expiry-row" ${clickable}>
+      <div class="expiry-month">${esc(m.month_label)}</div>
+      <div class="expiry-bar-wrap"><div class="expiry-bar ${cls}" style="width:${pct}%"></div></div>
+      <div class="expiry-count ${valCls}">${m.count}</div>
+    </div>`;
+  }).join('');
+}
+
+function openExpiryMonth(monthLabel, monthStart) {
+  const pipeline = (lastKpis && lastKpis.expiry_pipeline) || (lastKpis && lastKpis.renewal_rate && lastKpis.renewal_rate.pipeline) || [];
+  const [msYear, msMonth] = monthStart.split('-').map(Number);
+  const records = pipeline
+    .filter(r => {
+      const d = r.lease_end_date || r.end_date;
+      if (!d) return false;
+      const parts = d.split('-');
+      return parseInt(parts[0]) === msYear && parseInt(parts[1]) === msMonth;
+    })
+    .map(r => ({
+      tenant_name:   r.tenant_name,
+      unit_label:    r.unit_label || r.property_name || '',
+      lease_end_date: r.lease_end_date || r.end_date,
+      monthly_rent:  r.monthly_rent,
+      status:        r.status || 'not_started',
+    }));
+  openDrillDown('renewals', 'Expiring — ' + monthLabel, { records });
+}
+
 /* ── Main load ── */
-async function loadAll() {
+async function loadAll(manual) {
+  const btn = document.getElementById('btn-refresh');
+  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
   try {
-    const [kpisRes, briefingRes, meRes] = await Promise.all([
-      fetch('/api/kpis'),
+    const kpisRes = manual
+      ? await fetch('/api/refresh', { method: 'POST' })
+      : await fetch('/api/kpis');
+    if (kpisRes.status === 401) { window.location.href = '/auth/login'; return; }
+    if (!kpisRes.ok) throw new Error('KPI ' + kpisRes.status);
+
+    const [kpis, briefingRes, meRes, churnRes] = await Promise.all([
+      kpisRes.json(),
       fetch('/api/briefing?role=field_services'),
       fetch('/auth/me'),
+      fetch('/api/churn'),
     ]);
 
-    if (kpisRes.status === 401 || meRes.status === 401) {
+    if (meRes.status === 401) {
       window.location.href = '/auth/login'; return;
     }
 
-    const kpis = await kpisRes.json();
     lastKpis = kpis;
+    if (churnRes.ok) { lastChurn = await churnRes.json(); renderChurn(lastChurn); }
 
     /* Sync time */
     const ts = kpis.refreshed_at;
@@ -602,9 +1028,22 @@ async function loadAll() {
     renderKPICard('kc-sor',       'Speed of Repair',    'avg_days_to_close',  avgDays,
       avgDays != null ? avgDays.toFixed(1) : '—', 'days',
       `${openCount} open, ${overdueCount} overdue`);
+    // Wire KPI cards to drill-down drawers
+    [['kc-open-wo','work_orders','Open Work Orders'],['kc-overdue-wo','overdue_work_orders','Overdue Work Orders'],
+     ['kc-sor','work_orders','Open Work Orders'],
+     ['kc-insp-overdue','inspections','Overdue Inspections'],
+     ['kc-insp-due-soon','inspections','Inspections Due Soon'],
+     ['kc-insp-current','inspections','Inspection Schedule']].forEach(([id,sec,ttl]) => {
+      const c = document.getElementById(id); if (!c) return;
+      c.style.cursor = 'pointer'; c.onclick = () => openDrillDown(sec, ttl);
+    });
 
     /* Zero goals */
     renderZeroGoals(kpis);
+
+    /* Renewal pipeline & expiration calendar */
+    renderRenewals(kpis);
+    renderExpirationCalendar(kpis);
 
     /* Compact lists */
     renderWOList('compact-open-wos',    'dc-open-badge',    allOpenWOs);
@@ -614,6 +1053,7 @@ async function loadAll() {
     renderInspections(kpis.inspection_compliance || []);
 
     /* Offline banner */
+    document.getElementById('offline-banner').style.display = 'none';
     if (ts) {
       const age = (Date.now() - new Date(ts).getTime()) / 1000 / 3600;
       if (age > 4) {
@@ -624,10 +1064,13 @@ async function loadAll() {
 
   } catch(e) {
     console.error('loadAll failed:', e);
+  } finally {
+    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
   }
 }
 
 document.addEventListener('DOMContentLoaded', loadAll);
+setInterval(() => loadAll(false), 5 * 60 * 1000);
 </script>
 </body>
 </html>

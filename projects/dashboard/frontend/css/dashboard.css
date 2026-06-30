@@ -989,6 +989,9 @@ tr:hover td { background: #F7F8FA; }
 .dc-body {
   flex: 1;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .dc-body .compact-list {
   border: none;
@@ -1061,3 +1064,17 @@ tr:hover td { background: #F7F8FA; }
 @media (max-width: 560px) {
   #drill-drawer { width: 100vw; }
 }
+
+/* ── SIGN-OUT BUTTON ─────────────────────────────────────── */
+.signout-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.signout-btn:hover { color: var(--text); border-color: var(--muted); }

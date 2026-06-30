@@ -121,6 +121,7 @@
   <img id="header-logo" src="/logo.png" alt="Dream Big PM" style="height:36px;object-fit:contain">
   <div class="header-right">
     <div id="sync-ts" style="font-size:12px;color:var(--muted)">Loading&hellip;</div>
+    <button id="btn-refresh" onclick="loadAll(true)"><span class="spin-icon">&#8635;</span> Refresh</button>
     <span class="role-badge">Leasing</span>
     <div class="header-avatar" id="user-initials">—</div>
     <form method="post" action="/auth/logout" style="margin:0">
@@ -148,35 +149,109 @@
     </div>
   </div>
 
+  <!-- CLIENT GROWTH -->
+  <div class="section-label" style="margin-top:20px">Client Growth</div>
+  <div style="display:flex;gap:14px;justify-content:center;align-items:stretch;flex-wrap:wrap;margin-bottom:8px">
+  <div class="detail-card" id="leasing-churn-card" style="cursor:pointer;flex:0 0 320px" onclick="openChurnDrillDown()">
+    <div class="detail-card-hd">
+      <span class="dch-title">Client Churn</span>
+      <span class="dch-badge" id="leasing-churn-badge">—</span>
+      <span class="dch-arrow">›</span>
+    </div>
+    <div class="dc-body" style="padding:16px 18px;display:flex;align-items:center;gap:32px">
+      <div>
+        <div id="leasing-churn-pct-big" style="font-size:44px;font-weight:800;line-height:1;color:var(--text)">—</div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px">YTD Churn</div>
+      </div>
+      <div id="leasing-churn-sub" style="font-size:13px;color:var(--muted);line-height:1.8">Loading…</div>
+    </div>
+    <div class="dc-footer" style="display:flex;justify-content:space-between">
+      <span class="dc-see-all" onclick="event.stopPropagation();openChurnDrillDown()">View history →</span>
+    </div>
+  </div>
+
+  <div class="detail-card" style="flex:0 0 192px">
+    <div class="detail-card-hd" style="cursor:default">
+      <span class="dch-title">Doors Added</span>
+      <span class="dch-badge clear" id="leasing-doors-added-badge">—</span>
+    </div>
+    <div class="dc-body" style="padding:16px 18px">
+      <div id="leasing-doors-added-big" style="font-size:44px;font-weight:800;line-height:1;color:#16a34a">—</div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px">This Year</div>
+    </div>
+  </div>
+
+  <div class="detail-card" style="flex:0 0 192px">
+    <div class="detail-card-hd" style="cursor:default">
+      <span class="dch-title">Doors Lost</span>
+      <span class="dch-badge danger" id="leasing-doors-lost-badge">—</span>
+    </div>
+    <div class="dc-body" style="padding:16px 18px">
+      <div id="leasing-doors-lost-big" style="font-size:44px;font-weight:800;line-height:1;color:#dc2626">—</div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:4px">This Year</div>
+    </div>
+  </div>
+  </div>
+
   <!-- KEY METRICS -->
   <div class="section-label">Leasing Metrics</div>
   <div id="kpi-grid">
     <div class="kpi-card gray" id="kc-occ"><div class="kpi-name">Occupancy</div><div class="kpi-value">—</div></div>
     <div class="kpi-card gray" id="kc-dom"><div class="kpi-name">Days on Market</div><div class="kpi-value">—</div></div>
     <div class="kpi-card gray" id="kc-vac"><div class="kpi-name">Vacant Units</div><div class="kpi-value">—</div></div>
-    <div class="kpi-card gray" id="kc-e30"><div class="kpi-name">Expiring ≤30 Days</div><div class="kpi-value">—</div></div>
-    <div class="kpi-card gray" id="kc-e60"><div class="kpi-name">Expiring 31–60 Days</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-e30"><div class="kpi-name">Expiring 1–31 Days</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-e60"><div class="kpi-name">Expiring 32–61 Days</div><div class="kpi-value">—</div></div>
     <div class="kpi-card gray" id="kc-ren"><div class="kpi-name">Renewal Rate</div><div class="kpi-value">—</div></div>
   </div>
 
   <!-- VACANT UNITS -->
-  <div class="section-label" style="margin-top:20px">Vacant Units</div>
+  <div class="section-label" style="margin-top:20px;cursor:pointer" onclick="openDrillDown('vacant_units','Vacant Units — Revenue Lost')">Vacant Units ›</div>
   <div class="card" id="vac-card" style="padding:0">
     <div id="vac-list"><div style="padding:18px;color:var(--muted);font-size:13px">Loading…</div></div>
     <div id="vac-empty" style="display:none;padding:18px;color:var(--muted);font-size:13px;text-align:center">No vacant units — fully occupied!</div>
+    <div class="dc-footer"><span class="dc-see-all" onclick="openDrillDown('vacant_units','Vacant Units — Revenue Lost')">See all →</span></div>
+  </div>
+
+  <!-- LEASE EXPIRATION CALENDAR -->
+  <div class="section-label" style="margin-top:20px">Lease Expiration Calendar</div>
+  <div class="detail-card">
+    <div class="detail-card-hd" onclick="openDrillDown('renewals','Renewal Pipeline')">
+      <span class="dch-title">Expirations by Month</span>
+      <span class="dch-badge gray" id="leasing-dc-cal-badge">—</span>
+      <span class="dch-arrow">›</span>
+    </div>
+    <div class="dc-body">
+      <div id="leasing-compact-expiry-cal" class="compact-list" style="padding:4px 0;">
+        <div class="compact-item"><div class="ci-body"><div class="ci-name">Loading&hellip;</div></div></div>
+      </div>
+    </div>
+    <div class="dc-footer"><span class="dc-see-all" onclick="openDrillDown('renewals','Renewal Pipeline')">See all →</span></div>
   </div>
 
   <!-- UPCOMING EXPIRATIONS -->
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
-    <div class="section-label" style="margin:0">Upcoming Lease Expirations</div>
-    <div style="font-size:12px;color:var(--muted)">Click a status to update</div>
+    <div class="section-label" style="margin:0;cursor:pointer" onclick="openDrillDown('renewals','Upcoming Lease Expirations')">Upcoming Lease Expirations ›</div>
+    <div style="font-size:12px;color:var(--muted)">Click a status to update · <span style="cursor:pointer;text-decoration:underline" onclick="openDrillDown('renewals','Upcoming Lease Expirations')">See all →</span></div>
   </div>
   <div class="card" id="exp-card" style="padding:0;margin-top:8px">
     <div id="exp-list"><div style="padding:18px;color:var(--muted);font-size:13px">Loading…</div></div>
-    <div id="exp-empty" style="display:none;padding:18px;color:var(--muted);font-size:13px;text-align:center">No leases expiring in the next 90 days.</div>
+    <div id="exp-empty" style="display:none;padding:18px;color:var(--muted);font-size:13px;text-align:center">No leases expiring in the next 91 days.</div>
   </div>
 
 </div><!-- /main -->
+
+<!-- Drill-down drawer -->
+<div id="drawer-overlay" onclick="closeDrillDown()"></div>
+<div id="drill-drawer">
+  <div id="drawer-header">
+    <button id="drawer-back" onclick="drawerGoBack()" style="display:none">&#x2190; Back</button>
+    <div id="drawer-title">Details</div>
+    <button id="drawer-close" onclick="closeDrillDown()">&#x2715;</button>
+  </div>
+  <div id="drawer-body">
+    <div class="drawer-loading">Loading&hellip;</div>
+  </div>
+</div>
 
 <!-- Status dropdown -->
 <div class="status-menu" id="status-menu">
@@ -189,6 +264,8 @@
 
 <script>
 // ─── Utilities ─────────────────────────────────────────────
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function _setBadge(id, text, cls) { const el = document.getElementById(id); if (!el) return; el.textContent = text; el.className = 'dch-badge ' + (cls || ''); }
 function fmtPct(n, d) { if (n == null) return '—'; return Number(n).toFixed(d == null ? 1 : d) + '%'; }
 function fmt$(n)  { if (n == null) return '—'; return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}); }
 function fmtTs(s) {
@@ -207,6 +284,292 @@ function daysUntil(dateStr) {
 }
 
 // ─── KPI color logic ───────────────────────────────────────
+function fmtDate(s) {
+  if (!s) return '—';
+  const d = new Date(s + 'T00:00:00');
+  if (isNaN(d)) return s;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function trunc(s, n) { s = String(s||''); return s.length > n ? s.slice(0, n) + '…' : s; }
+function daysFromNow(dateStr) {
+  if (!dateStr) return null;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const d = new Date(dateStr + 'T00:00:00');
+  return Math.round((d - now) / 86400000);
+}
+function dstat(val, label, valColor, accentColor) {
+  const vc = valColor    ? ' c-'      + valColor    : '';
+  const ac = accentColor ? ' accent-' + accentColor : '';
+  return `<div class="dstat${ac}"><div class="dstat-val${vc}">${val}</div><div class="dstat-label">${label}</div></div>`;
+}
+function dstats() { return `<div class="drawer-stats">${Array.from(arguments).join('')}</div>`; }
+
+// ─── Drawer system ─────────────────────────────────────────
+let _drawerStack = [];
+
+function openDrillDown(section, title, localData) {
+  const isOpen = document.getElementById('drill-drawer').classList.contains('open');
+  if (isOpen) {
+    _drawerStack.push({
+      title: document.getElementById('drawer-title').textContent,
+      html:  document.getElementById('drawer-body').innerHTML,
+    });
+  } else {
+    _drawerStack = [];
+  }
+  document.getElementById('drawer-back').style.display = _drawerStack.length ? 'inline-flex' : 'none';
+  document.getElementById('drawer-title').textContent = title;
+  document.getElementById('drawer-body').innerHTML = '<div class="drawer-loading">Loading&hellip;</div>';
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('drill-drawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  if (localData) {
+    renderDrawer(section, localData);
+    return;
+  }
+
+  fetch('/api/drill/' + section)
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(data => renderDrawer(section, data))
+    .catch(err => {
+      document.getElementById('drawer-body').innerHTML =
+        '<div class="drawer-loading" style="color:var(--red)">Failed to load — ' + err + '</div>';
+    });
+}
+
+function drawerGoBack() {
+  if (!_drawerStack.length) return;
+  const prev = _drawerStack.pop();
+  document.getElementById('drawer-title').textContent = prev.title;
+  document.getElementById('drawer-body').innerHTML   = prev.html;
+  document.getElementById('drawer-back').style.display = _drawerStack.length ? 'inline-flex' : 'none';
+}
+
+function closeDrillDown() {
+  _drawerStack = [];
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('drill-drawer').classList.remove('open');
+  document.getElementById('drawer-back').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrillDown(); });
+
+function renderDrawer(section, data) {
+  const body = document.getElementById('drawer-body');
+
+  if (section === 'churn') {
+    _renderChurnDrawer(data, body);
+    return;
+  }
+
+  if (section === 'vacant_units') {
+    const rows = data.records || [];
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No vacant units — full occupancy ✓</div>'; return; }
+    const totalLoss = rows.reduce((s, u) => s + (u.total_loss || 0), 0);
+    const maxDays   = rows.length ? Math.max(...rows.map(u => u.days_vacant||0)) : 0;
+    const avgDays   = rows.length ? Math.round(rows.reduce((s,u) => s + (u.days_vacant||0), 0) / rows.length) : 0;
+    const maxColor  = maxDays > 30 ? 'red' : maxDays > 14 ? 'yellow' : '';
+    body.innerHTML = dstats(
+      dstat(rows.length, rows.length === 1 ? 'Unit Vacant' : 'Units Vacant', 'red', 'red'),
+      dstat(avgDays + ' days', 'Avg Days on Market', maxColor, maxColor),
+      dstat(maxDays + ' days', 'Longest on Market', maxColor, maxColor),
+      dstat(fmt$(totalLoss), 'Total Revenue Lost', 'red', 'red')
+    ) + `<div class="table-wrap"><table>
+        <thead><tr><th>Address</th><th>Days Vacant</th><th>Daily Cost</th><th>Total Lost</th></tr></thead>
+        <tbody>${rows.map(u => `<tr>
+          <td class="font-mono">${esc(u.property_name||u.unit_label||u.unit_id||'')}</td>
+          <td class="font-mono text-yellow">${u.days_vacant} days</td>
+          <td class="font-mono">${fmt$(u.daily_cost)}/day</td>
+          <td class="font-mono text-red">${fmt$(u.total_loss)}</td>
+        </tr>`).join('')}</tbody>
+        <tfoot><tr style="border-top:2px solid var(--border);font-weight:700">
+          <td colspan="2" style="color:var(--muted)">${rows.length} vacant · ${avgDays} days avg</td>
+          <td></td>
+          <td class="font-mono text-red">${fmt$(totalLoss)}</td>
+        </tr></tfoot>
+      </table></div>`;
+    return;
+  }
+
+  if (section === 'renewals') {
+    const rows = data.records || [];
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No renewals in pipeline</div>'; return; }
+    const signed      = rows.filter(r => r.status === 'signed').length;
+    const lost        = rows.filter(r => r.status === 'lost').length;
+    const inProgress  = rows.filter(r => r.status === 'in_negotiation' || r.status === 'contacted').length;
+    const notStarted  = rows.filter(r => r.status === 'not_started').length;
+    const rentAtRisk  = rows.filter(r => r.status !== 'signed').reduce((s,r) => s + (r.monthly_rent||0), 0);
+    body.innerHTML = dstats(
+      dstat(rows.length, 'In Pipeline', '', ''),
+      dstat(signed,     'Signed',        'green',  'green'),
+      dstat(inProgress, 'In Progress',   inProgress  ? 'yellow' : '', inProgress  ? 'yellow' : ''),
+      dstat(notStarted, 'Not Contacted', notStarted  ? 'red'    : '', notStarted  ? 'red'    : ''),
+      dstat(fmt$(rentAtRisk) + '/mo', 'Rent Unsigned', rentAtRisk > 0 ? 'red' : '', rentAtRisk > 0 ? 'red' : '')
+    ) + `<div class="table-wrap"><table>
+        <thead><tr><th>Resident</th><th>Unit</th><th>Lease Ends</th><th>Days Left</th><th>Status</th></tr></thead>
+        <tbody>${rows.map(r => {
+          const days = daysFromNow(r.lease_end_date || r.end_date);
+          const dCls = days != null && days < 30 ? 'text-red' : days != null && days < 60 ? 'text-yellow' : '';
+          const dDisp = days == null ? '—' : days <= 0 ? '<span class="text-red">Expired</span>' : days + ' days';
+          const statusMap = {not_started:'Not Started',contacted:'Contacted',in_negotiation:'In Negotiation',signed:'Signed',lost:'Lost'};
+          const sBadge = r.status === 'signed' ? 'badge-green' : r.status === 'lost' ? 'badge-red' : r.status === 'not_started' ? 'badge-gray' : 'badge-yellow';
+          return `<tr>
+            <td>${esc(r.tenant_name)}</td>
+            <td class="font-mono text-muted">${esc(r.unit_label||r.unit||'')}</td>
+            <td class="text-muted">${fmtDate(r.lease_end_date||r.end_date)}</td>
+            <td class="${dCls} font-mono">${dDisp}</td>
+            <td><span class="badge ${sBadge}">${statusMap[r.status]||r.status}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+        <tfoot><tr style="border-top:2px solid var(--border);font-weight:700">
+          <td colspan="4" style="color:var(--muted)">${rows.length} total &nbsp;·&nbsp; <span class="text-green">${signed} signed</span> &nbsp;·&nbsp; <span class="text-red">${lost} lost</span></td>
+          <td class="font-mono text-red">${fmt$(rentAtRisk)}/mo at risk</td>
+        </tr></tfoot>
+      </table></div>`;
+    return;
+  }
+
+  if (section === 'expiry_month') {
+    const rows = data.records || [];
+    const label = data.month_label || 'This Month';
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No leases expiring this month</div>'; return; }
+    const statusMap = {not_started:'Not Started',contacted:'Contacted',in_negotiation:'In Negotiation',signed:'Signed',lost:'Lost'};
+    body.innerHTML = dstats(
+      dstat(rows.length, 'Expiring in ' + label, '', ''),
+      dstat(rows.filter(r => r.status === 'signed').length, 'Renewed', 'green', 'green'),
+      dstat(rows.filter(r => !r.status || r.status === 'not_started').length, 'Not Started', 'red', 'red')
+    ) + `<div class="table-wrap"><table>
+        <thead><tr><th>Resident</th><th>Unit</th><th>Lease Ends</th><th>Status</th></tr></thead>
+        <tbody>${rows.map(r => {
+          const sBadge = r.status === 'signed' ? 'badge-green' : r.status === 'lost' ? 'badge-red' : r.status === 'not_started' || !r.status ? 'badge-gray' : 'badge-yellow';
+          return `<tr>
+            <td>${esc(r.tenant_name)}</td>
+            <td class="font-mono text-muted">${esc(r.unit_label||r.property_name||'')}</td>
+            <td class="text-muted">${fmtDate(r.lease_end_date||r.end_date)}</td>
+            <td><span class="badge ${sBadge}">${statusMap[r.status]||r.status||'Not Started'}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>`;
+    return;
+  }
+
+  if (section === 'occupancy') {
+    const vacant = data.vacant_units || [];
+    const occ = data.occupied || 0; const tot = data.total || 0;
+    const pct = tot > 0 ? (occ / tot * 100).toFixed(1) : null;
+    const pctColor = pct == null ? '' : pct >= 95 ? 'green' : pct >= 90 ? 'yellow' : 'red';
+    body.innerHTML = dstats(
+      dstat(pct != null ? pct + '%' : '—', 'Occupancy Rate', pctColor, pctColor),
+      dstat(occ, 'Units Occupied', 'green', 'green'),
+      dstat(tot, 'Total Units', '', ''),
+      vacant.length ? dstat(vacant.length, 'Units Vacant', 'red', 'red') : ''
+    ) + (vacant.length ? `<div class="table-wrap"><table>
+      <thead><tr><th>Address</th><th>Days Vacant</th></tr></thead>
+      <tbody>${vacant.map(u => `<tr>
+        <td class="font-mono">${esc(u.property_name||u.unit_label||u.unit_id||'')}</td>
+        <td class="font-mono text-yellow">${u.days_vacant||0} days</td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : '<div class="drawer-empty">All units occupied ✓</div>');
+    return;
+  }
+
+  body.innerHTML = '<div class="drawer-empty">No data available for this section.</div>';
+}
+
+function _renderChurnDrawer(data, body) {
+  if (!data || !data.connected) {
+    body.innerHTML = '<div class="drawer-empty">Google Sheets not connected. Add GOOGLE_SERVICE_ACCOUNT_JSON to .env.</div>';
+    return;
+  }
+  const history = data.history || [];
+  const avgPct  = data.average_churn_pct;
+  let projHtml = '';
+  const curEntry = history.find(h => h.year === data.current_year);
+  if (curEntry && curEntry.offboards > 0) {
+    const now = new Date();
+    const yearStart = new Date(data.current_year, 0, 1);
+    const yearEnd   = new Date(data.current_year, 11, 31);
+    const daysElapsed   = Math.max(1, Math.floor((now - yearStart) / 86400000) + 1);
+    const daysInYear    = Math.floor((yearEnd - yearStart) / 86400000) + 1;
+    const daysRemaining = Math.max(0, daysInYear - daysElapsed);
+    const dailyRate     = curEntry.offboards / daysElapsed;
+    const projOffboards = Math.round((curEntry.offboards + dailyRate * daysRemaining) * 10) / 10;
+    const projPct       = (projOffboards / curEntry.start_doors * 100);
+    const projColor     = projPct <= 10 ? '#16a34a' : projPct <= 15 ? '#d97706' : '#dc2626';
+    const onOff         = projPct <= 10 ? 'on track' : 'above target';
+    projHtml = `<div style="margin:12px 0 4px;padding:12px 16px;background:#f0f9f4;border:1px solid #d1fae5;border-radius:8px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:6px">${data.current_year} Annualized Projection</div>
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <span style="font-size:28px;font-weight:700;color:${projColor}">${projPct.toFixed(1)}%</span>
+        <span style="font-size:13px;color:#6b7280">${onOff} for ≤10% target</span>
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-top:6px">
+        ${curEntry.offboards} lost so far · ${daysElapsed} days elapsed · ${daysRemaining} days left ·
+        ${dailyRate.toFixed(3)}/day → ~${projOffboards} projected full-year losses out of ${curEntry.start_doors} doors
+      </div>
+    </div>`;
+  }
+  const statsHtml = dstats(
+    dstat(data.current_churn_pct != null ? data.current_churn_pct.toFixed(2) + '%' : '—',
+      'YTD Churn ' + data.current_year,
+      data.current_churn_pct == null ? '' : data.current_churn_pct <= 10 ? 'green' : data.current_churn_pct <= 15 ? 'yellow' : 'red',
+      data.current_churn_pct == null ? '' : data.current_churn_pct <= 10 ? 'green' : data.current_churn_pct <= 15 ? 'yellow' : 'red'),
+    dstat(avgPct != null ? avgPct.toFixed(2) + '%' : '—', 'All-Time Avg', '', ''),
+    dstat(data.current_door_count ?? '—', 'Doors Today', '', '')
+  );
+  const chartHtml = _churnBarChart(history, avgPct);
+  const tRows = history.map(h => {
+    const color = h.churn_pct < 10 ? 'text-green' : h.churn_pct <= 20 ? 'text-yellow' : 'text-red';
+    return `<tr>
+      <td class="font-mono">${h.year}</td><td class="font-mono">${h.start_doors}</td>
+      <td class="font-mono text-green">+${h.adds}</td><td class="font-mono text-red">-${h.offboards}</td>
+      <td class="font-mono">${h.end_doors}</td><td class="font-mono ${color}">${h.churn_pct.toFixed(2)}%</td>
+    </tr>`;
+  }).join('');
+  body.innerHTML = statsHtml + projHtml + chartHtml + `<div class="table-wrap" style="margin-top:20px"><table>
+    <thead><tr><th>Year</th><th>Start Doors</th><th>Adds</th><th>Offboards</th><th>End Doors</th><th>Churn %</th></tr></thead>
+    <tbody>${tRows}</tbody>
+  </table></div>
+  <div style="font-size:12px;color:var(--muted);margin-top:12px;padding:8px 12px;background:#f9f8f6;border-radius:6px">
+    Your target: ≤10% annual churn · NARPM benchmark: &lt;15%
+  </div>`;
+}
+
+function _churnBarChart(history, avgPct) {
+  if (!history.length) return '';
+  const W = 560, H = 220, padL = 40, padR = 20, padT = 24, padB = 32;
+  const chartW = W - padL - padR, chartH = H - padT - padB;
+  const maxPct = Math.max(...history.map(h => h.churn_pct), avgPct || 0, 5);
+  const scaleY = v => chartH - (v / (maxPct * 1.15)) * chartH;
+  const barW = Math.floor(chartW / history.length * 0.55);
+  const gap  = chartW / history.length;
+  const bars = history.map((h, i) => {
+    const x = padL + i * gap + (gap - barW) / 2;
+    const barH = Math.max(2, chartH - scaleY(h.churn_pct));
+    const y    = padT + scaleY(h.churn_pct);
+    const fill = h.churn_pct < 10 ? '#16a34a' : h.churn_pct <= 20 ? '#d97706' : '#dc2626';
+    return `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="${fill}" rx="3"/>
+      <text x="${x + barW / 2}" y="${y - 4}" text-anchor="middle" font-size="11" fill="#374151">${h.churn_pct.toFixed(1)}%</text>
+      <text x="${x + barW / 2}" y="${H - padB + 14}" text-anchor="middle" font-size="11" fill="#6b7280">${h.year}</text>`;
+  }).join('');
+  let avgLine = '';
+  if (avgPct != null) {
+    const ay = padT + scaleY(avgPct);
+    avgLine = `<line x1="${padL}" y1="${ay}" x2="${W - padR}" y2="${ay}" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="${W - padR + 2}" y="${ay + 4}" font-size="10" fill="#9ca3af">Avg</text>`;
+  }
+  const targetY = padT + scaleY(10);
+  const targetLine = `<line x1="${padL}" y1="${targetY}" x2="${W - padR}" y2="${targetY}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text x="${W - padR + 2}" y="${targetY + 4}" font-size="10" fill="#dc2626">10%</text>`;
+  return `<div style="overflow-x:auto;margin:16px 0">
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block">
+      ${bars}${avgLine}${targetLine}
+    </svg>
+  </div>`;
+}
+
 function kpiColor(key, val) {
   if (val == null) return 'gray';
   const v = Number(val);
@@ -355,14 +718,14 @@ function renderExpirationKPIs(records) {
   (records || []).forEach(r => {
     const days = daysUntil(r.end_date || r.lease_end_date);
     if (days == null) return;
-    if (days >= 0 && days <= 30) e30++;
-    else if (days > 30 && days <= 60) e60++;
+    if (days >= 1 && days <= 31) e30++;
+    else if (days >= 32 && days <= 61) e60++;
   });
-  renderKPICard('kc-e30', 'Expiring ≤30 Days', 'exp_30',
+  renderKPICard('kc-e30', 'Expiring 1–31 Days', 'exp_30',
     e30, e30, null,
     e30 > 0 ? 'Action needed' : 'None urgent',
     'Target: 0 unsigned');
-  renderKPICard('kc-e60', 'Expiring 31–60 Days', 'exp_60',
+  renderKPICard('kc-e60', 'Expiring 32–61 Days', 'exp_60',
     e60, e60, null,
     e60 > 0 ? 'Follow up now' : 'All clear',
     'Target: contacted');
@@ -427,7 +790,7 @@ function renderExpirations(records) {
 
   const filtered = _expRecords
     .map(r => ({ ...r, _days: daysUntil(r.end_date || r.lease_end_date) }))
-    .filter(r => r._days != null && r._days <= 90)
+    .filter(r => r._days != null && r._days >= 1 && r._days <= 91)
     .sort((a,b) => a._days - b._days);
 
   if (filtered.length === 0) {
@@ -501,17 +864,139 @@ document.getElementById('status-menu').addEventListener('click', async e => {
   document.getElementById('status-menu').style.display = 'none';
 });
 
+// ─── Lease Expiration Calendar ─────────────────────────────
+function renderExpirationCalendar(d) {
+  const rawCal = (d.lease_expiry_calendar && d.lease_expiry_calendar.length) ? d.lease_expiry_calendar : (d.renewal_calendar || []);
+  const el = document.getElementById('leasing-compact-expiry-cal');
+  const needsRenewal = (d.needs_renewal || []).length;
+  const byKey = {};
+  rawCal.forEach(m => { if (m.month_start) byKey[m.month_start] = m; });
+  const cal = [];
+  const now = new Date();
+  for (let i = 0; i < 13; i++) {
+    const y = now.getFullYear() + Math.floor((now.getMonth() + i) / 12);
+    const mo = (now.getMonth() + i) % 12;
+    const key = `${y}-${String(mo + 1).padStart(2, '0')}-01`;
+    const monthLabel = new Date(y, mo, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    cal.push(byKey[key] || { month_start: key, month_label: monthLabel, count: 0 });
+  }
+  const totalExps = cal.reduce((s, m) => s + (m.count || 0), 0);
+  _setBadge('leasing-dc-cal-badge', needsRenewal > 0 ? needsRenewal + ' need action' : totalExps + ' upcoming', needsRenewal > 0 ? 'warn' : 'gray');
+  if (!el) return;
+  if (!rawCal.length && totalExps === 0) {
+    el.innerHTML = '<div class="compact-empty">No upcoming expirations on record</div>';
+    return;
+  }
+  const maxCount = Math.max(...cal.map(m => m.count), 1);
+  el.innerHTML = cal.map(m => {
+    const pct    = Math.max(Math.round((m.count / maxCount) * 100), 4);
+    const cls    = m.count >= 6 ? 'red' : m.count >= 3 ? 'yellow' : 'green';
+    const valCls = m.count >= 6 ? 'text-red' : m.count >= 3 ? 'text-yellow' : '';
+    const monthStart = m.month_start || '';
+    const clickAttr  = m.count > 0
+      ? `style="padding:5px 14px;cursor:pointer" onclick='openLeasingExpiryMonth(${JSON.stringify(m.month_label)},${JSON.stringify(monthStart)})'`
+      : `style="padding:5px 14px"`;
+    return `<div class="expiry-row" ${clickAttr}>
+      <div class="expiry-month">${esc(m.month_label)}</div>
+      <div class="expiry-bar-wrap"><div class="expiry-bar ${cls}" style="width:${pct}%"></div></div>
+      <div class="expiry-count ${valCls}">${m.count}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Churn ── */
+function churnColor(pct) {
+  if (pct == null) return '';
+  if (pct < 10) return '#16a34a';
+  if (pct <= 20) return '#d97706';
+  return '#dc2626';
+}
+
+function churnBadgeClass(pct) {
+  if (pct == null) return '';
+  if (pct < 10) return 'clear';
+  if (pct <= 20) return 'warn';
+  return 'danger';
+}
+
+function renderChurn(data) {
+  lastChurn = data;
+  if (!data || !data.connected) {
+    document.getElementById('leasing-churn-pct-big').textContent = '—';
+    document.getElementById('leasing-churn-badge').textContent   = 'Not connected';
+    document.getElementById('leasing-churn-sub').textContent     = 'Churn data unavailable';
+    return;
+  }
+  const pct = data.current_churn_pct;
+  const big = document.getElementById('leasing-churn-pct-big');
+  big.textContent  = pct != null ? pct.toFixed(2) + '%' : '—';
+  big.style.color  = churnColor(pct);
+  const badge = document.getElementById('leasing-churn-badge');
+  badge.textContent = pct != null ? pct.toFixed(2) + '%' : '—';
+  badge.className   = 'dch-badge ' + churnBadgeClass(pct);
+  const sub = document.getElementById('leasing-churn-sub');
+  sub.innerHTML = [
+    `<strong>${data.current_offboards ?? 0}</strong> offboards / <strong>${data.current_start_doors ?? 0}</strong> doors at Jan 1`,
+    `<strong>${data.current_door_count ?? 0}</strong> doors today`,
+  ].join(' &nbsp;·&nbsp; ');
+  const adds = data.current_adds ?? 0;
+  const lost = data.current_offboards ?? 0;
+  document.getElementById('leasing-doors-added-big').textContent  = adds;
+  document.getElementById('leasing-doors-added-badge').textContent = adds;
+  document.getElementById('leasing-doors-lost-big').textContent   = lost;
+  document.getElementById('leasing-doors-lost-badge').textContent = lost;
+}
+
+let lastChurn = null;
+
+function openChurnDrillDown() {
+  openDrillDown('churn', 'Client Churn', lastChurn || { connected: false, history: [] });
+}
+
+function openLeasingExpiryMonth(monthLabel, monthStart) {
+  const pipeline = (_expRecords && _expRecords.length) ? _expRecords : [];
+  const [msYear, msMonth] = monthStart.split('-').map(Number);
+  const records = pipeline
+    .filter(r => {
+      const d = r.end_date || r.lease_end_date;
+      if (!d) return false;
+      const parts = d.split('-');
+      return parseInt(parts[0]) === msYear && parseInt(parts[1]) === msMonth;
+    })
+    .map(r => ({
+      tenant_name:    r.tenant_name || r.tenant || '—',
+      unit_label:     r.unit_label || r.unit_address || r.property_name || '',
+      lease_end_date: r.end_date || r.lease_end_date,
+      monthly_rent:   r.monthly_rent,
+      status:         r.status || 'not_started',
+    }));
+  openDrillDown('expiry_month', 'Expiring — ' + monthLabel, { month_label: monthLabel, records });
+}
+
+// Wire KPI cards to drill-down: add onclick after card is rendered
+function _addKPIDrillOnclick(id, section, title) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  card.style.cursor = 'pointer';
+  card.onclick = () => openDrillDown(section, title);
+}
+
 // ─── Load Everything ───────────────────────────────────────
-async function loadAll() {
+async function loadAll(manual) {
+  const btn = document.getElementById('btn-refresh');
+  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
   try {
-    const kpisRes = await fetch('/api/kpis?_=' + Date.now());
+    const kpisRes = manual
+      ? await fetch('/api/refresh', { method: 'POST' })
+      : await fetch('/api/kpis?_=' + Date.now());
     if (kpisRes.status === 401) { window.location.href = '/auth/login'; return; }
     if (!kpisRes.ok) throw new Error('KPI ' + kpisRes.status);
 
-    const [kpis, briefingData, expiryData] = await Promise.all([
+    const [kpis, briefingData, expiryData, churnRes] = await Promise.all([
       kpisRes.json(),
       fetch('/api/briefing?role=leasing_agent').then(r => r.ok ? r.json() : null),
       fetch('/api/drill/expiring_90').then(r => r.ok ? r.json() : null),
+      fetch('/api/churn'),
     ]);
 
     const ts = kpis._synced_at || kpis.refreshed_at;
@@ -519,7 +1004,17 @@ async function loadAll() {
     document.getElementById('offline-banner').style.display = 'none';
 
     renderKPIs(kpis);
+    renderExpirationCalendar(kpis);
     if (briefingData) renderBriefing(briefingData);
+    if (churnRes.ok) { lastChurn = await churnRes.json(); renderChurn(lastChurn); }
+
+    // Wire KPI cards to drill-down drawers
+    _addKPIDrillOnclick('kc-occ', 'occupancy', 'Occupancy');
+    _addKPIDrillOnclick('kc-vac', 'vacant_units', 'Vacant Units — Revenue Lost');
+    _addKPIDrillOnclick('kc-dom', 'vacant_units', 'Vacant Units — Revenue Lost');
+    _addKPIDrillOnclick('kc-ren', 'renewals', 'Renewal Pipeline');
+    _addKPIDrillOnclick('kc-e30', 'renewals', 'Expiring 1–31 Days');
+    _addKPIDrillOnclick('kc-e60', 'renewals', 'Expiring 32–61 Days');
 
     const vacUnits = kpis.vacancy_cost_clock || [];
     renderVacantUnits(vacUnits);
@@ -543,11 +1038,13 @@ async function loadAll() {
     document.getElementById('offline-banner').style.display = '';
     document.getElementById('offline-ts').textContent = fmtTs(new Date().toISOString());
     console.error(e);
+  } finally {
+    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
   }
 }
 
 loadAll();
-setInterval(loadAll, 5 * 60 * 1000);
+setInterval(() => loadAll(false), 5 * 60 * 1000);
 </script>
 </body>
 </html>

@@ -16,7 +16,10 @@
     <button id="btn-refresh" onclick="loadAll(true)">
       <span class="spin-icon">&#8635;</span> Refresh
     </button>
-    <div class="header-avatar">BB</div>
+    <div class="header-avatar" id="user-initials">—</div>
+    <form method="post" action="/auth/logout" style="margin:0">
+      <button type="submit" class="signout-btn">Sign Out</button>
+    </form>
   </div>
 </div>
 
@@ -54,9 +57,9 @@
     <div class="kpi-card gray"><div class="kpi-name">Speed of Repair</div><div class="kpi-value">&#8212;</div></div>
     <div class="kpi-card gray"><div class="kpi-name">Maint. Satisfaction</div><div class="kpi-value">&#8212;</div></div>
     <div class="kpi-card gray"><div class="kpi-name">Google Rating</div><div class="kpi-value">&#8212;</div></div>
-    <div class="kpi-card gray"><div class="kpi-name">Expiring 30 Days</div><div class="kpi-value">&#8212;</div></div>
-    <div class="kpi-card gray"><div class="kpi-name">Expiring 60 Days</div><div class="kpi-value">&#8212;</div></div>
-    <div class="kpi-card gray"><div class="kpi-name">Expiring 90 Days</div><div class="kpi-value">&#8212;</div></div>
+    <div class="kpi-card gray"><div class="kpi-name">Expiring 1–31 Days</div><div class="kpi-value">&#8212;</div></div>
+    <div class="kpi-card gray"><div class="kpi-name">Expiring 32–61 Days</div><div class="kpi-value">&#8212;</div></div>
+    <div class="kpi-card gray"><div class="kpi-name">Expiring 62–91 Days</div><div class="kpi-value">&#8212;</div></div>
   </div>
 
   <!-- ════════════════════════════════════════════════════
@@ -258,7 +261,7 @@
         <span class="alert-count-badge" id="alert-count-badge">—</span>
         <span class="chevron" id="alerts-chevron">&#9660;</span>
       </div>
-      <div class="dc-body">
+      <div class="dc-body" style="flex:none">
         <div id="alerts-list" class="open">
           <div class="empty-state">Loading&hellip;</div>
         </div>
@@ -396,7 +399,7 @@ function renderKPIs(d) {
 
   // Expiring lease counts from the Supabase renewal pipeline (same source as the renewal rate card)
   const _pipe    = d.renewal_rate?.pipeline || [];
-  const _pipeDy  = r => { const dt = r.lease_end_date || ''; if (!dt) return null; return Math.ceil((new Date(dt) - new Date()) / 86400000); };
+  const _pipeDy  = r => { const dt = r.lease_end_date || ''; if (!dt) return null; return Math.round((new Date(dt + 'T00:00:00') - Date.now()) / 86400000); };
   const _exp30   = _pipe.filter(r => { const dy = _pipeDy(r); return dy != null && dy >= 0 && dy <= 30; }).length;
   const _exp60   = _pipe.filter(r => { const dy = _pipeDy(r); return dy != null && dy > 30  && dy <= 60; }).length;
   const _exp90   = _pipe.filter(r => { const dy = _pipeDy(r); return dy != null && dy > 60  && dy <= 90; }).length;
@@ -439,17 +442,17 @@ function renderKPIs(d) {
       display: googleRat ? googleRat.toFixed(1) + ' ★' : '—',
       target:'Target ≥4.8★',
       sub: '' },
-    { key:'expiring_30',  name:'Leases Expiring ≤30 Days',  val: _exp30 || null,
+    { key:'expiring_30',  name:'Leases Expiring 1–31 Days',  val: _exp30 || null,
       drill:'expiring_30',
       display: _exp30,
       target:'',
       sub: '' },
-    { key:'expiring_60',  name:'Leases Expiring ≤60 Days',  val: _exp60 || null,
+    { key:'expiring_60',  name:'Leases Expiring 32–61 Days',  val: _exp60 || null,
       drill:'expiring_60',
       display: _exp60,
       target:'',
       sub: '' },
-    { key:'expiring_90',  name:'Leases Expiring ≤90 Days',  val: _exp90 || null,
+    { key:'expiring_90',  name:'Leases Expiring 62–91 Days',  val: _exp90 || null,
       drill:'expiring_90',
       display: _exp90,
       target:'',
@@ -954,6 +957,16 @@ async function loadAll(manual) {
       document.getElementById('alerts-chevron').classList.add('open');
     }
 
+    // Update user initials from auth
+    try {
+      const meRes2 = await fetch('/auth/me');
+      if (meRes2.ok) {
+        const me = await meRes2.json();
+        const initials = (me.display_name || me.email || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+        document.getElementById('user-initials').textContent = initials;
+      }
+    } catch (_) {}
+
   } catch (err) {
     console.error('Dashboard load error:', err);
     document.getElementById('offline-banner').style.display = 'block';
@@ -1455,8 +1468,8 @@ function renderDrawer(section, data) {
   }
 
   if (section === 'expiring_30' || section === 'expiring_60' || section === 'expiring_90') {
-    const days_cap = section === 'expiring_30' ? 30 : section === 'expiring_60' ? 60 : 90;
-    const days_min = section === 'expiring_30' ? 0  : section === 'expiring_60' ? 31 : 61;
+    const days_cap = section === 'expiring_30' ? 31 : section === 'expiring_60' ? 61 : 91;
+    const days_min = section === 'expiring_30' ? 1  : section === 'expiring_60' ? 32 : 62;
     const all  = data.records || [];
     const rows = all.filter(r => { const d = daysFromNow(r.lease_end_date); return d != null && d >= days_min && d <= days_cap; });
     const rangeLabel = days_min === 0 ? `≤${days_cap} days` : `${days_min}–${days_cap} days`;

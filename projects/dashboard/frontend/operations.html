@@ -38,6 +38,7 @@
   <img id="header-logo" src="/logo.png" alt="Dream Big PM" style="height:36px;object-fit:contain">
   <div class="header-right">
     <div id="sync-ts" style="font-size:12px;color:var(--muted)">Loading&hellip;</div>
+    <button id="btn-refresh" onclick="loadAll(true)"><span class="spin-icon">&#8635;</span> Refresh</button>
     <span class="role-badge">Operations</span>
     <div class="header-avatar" id="user-initials">—</div>
     <form method="post" action="/auth/logout" style="margin:0">
@@ -80,10 +81,11 @@
   <!-- CLIENT GROWTH -->
   <div class="section-label">Client Growth</div>
   <div style="display:flex;gap:14px;justify-content:center;align-items:stretch;flex-wrap:wrap;margin-bottom:8px">
-    <div class="detail-card" style="flex:0 0 320px">
+    <div class="detail-card" id="churn-card" style="cursor:pointer;flex:0 0 320px" onclick="openChurnDrillDown()">
       <div class="detail-card-hd">
         <span class="dch-title">Client Churn</span>
         <span class="dch-badge" id="churn-badge">—</span>
+        <span class="dch-arrow">›</span>
       </div>
       <div class="dc-body" style="padding:16px 18px;display:flex;align-items:center;gap:32px">
         <div>
@@ -92,6 +94,7 @@
         </div>
         <div id="churn-sub" style="font-size:13px;color:var(--muted);line-height:1.8">Loading…</div>
       </div>
+      <div class="dc-footer"><span class="dc-see-all" onclick="event.stopPropagation();openChurnDrillDown()">View history →</span></div>
     </div>
     <div class="detail-card" style="flex:0 0 192px">
       <div class="detail-card-hd" style="cursor:default">
@@ -482,6 +485,7 @@ function churnBadgeClass(pct) {
 }
 
 function renderChurn(data) {
+  lastChurn = data;
   if (!data || !data.connected) {
     document.getElementById('churn-pct-big').textContent = '—';
     document.getElementById('churn-badge').textContent   = 'Not connected';
@@ -508,6 +512,108 @@ function renderChurn(data) {
   document.getElementById('doors-added-badge').textContent = adds;
   document.getElementById('doors-lost-big').textContent   = lost;
   document.getElementById('doors-lost-badge').textContent = lost;
+}
+
+let lastChurn = null;
+
+function openChurnDrillDown() {
+  openDrillDown('churn', 'Client Churn', lastChurn || { connected: false, history: [] });
+}
+
+function _renderChurnDrawer(data, body) {
+  if (!data || !data.connected) {
+    body.innerHTML = '<div class="drawer-empty">Google Sheets not connected. Add GOOGLE_SERVICE_ACCOUNT_JSON to .env.</div>';
+    return;
+  }
+  const history = data.history || [];
+  const avgPct  = data.average_churn_pct;
+  let projHtml = '';
+  const curEntry = history.find(h => h.year === data.current_year);
+  if (curEntry && curEntry.offboards > 0) {
+    const now = new Date();
+    const yearStart = new Date(data.current_year, 0, 1);
+    const yearEnd   = new Date(data.current_year, 11, 31);
+    const daysElapsed   = Math.max(1, Math.floor((now - yearStart) / 86400000) + 1);
+    const daysInYear    = Math.floor((yearEnd - yearStart) / 86400000) + 1;
+    const daysRemaining = Math.max(0, daysInYear - daysElapsed);
+    const dailyRate     = curEntry.offboards / daysElapsed;
+    const projOffboards = Math.round((curEntry.offboards + dailyRate * daysRemaining) * 10) / 10;
+    const projPct       = (projOffboards / curEntry.start_doors * 100);
+    const projColor     = projPct <= 10 ? '#16a34a' : projPct <= 15 ? '#d97706' : '#dc2626';
+    const onOff         = projPct <= 10 ? 'on track' : 'above target';
+    projHtml = `<div style="margin:12px 0 4px;padding:12px 16px;background:#f0f9f4;border:1px solid #d1fae5;border-radius:8px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:6px">${data.current_year} Annualized Projection</div>
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <span style="font-size:28px;font-weight:700;color:${projColor}">${projPct.toFixed(1)}%</span>
+        <span style="font-size:13px;color:#6b7280">${onOff} for ≤10% target</span>
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-top:6px">
+        ${curEntry.offboards} lost so far · ${daysElapsed} days elapsed · ${daysRemaining} days left ·
+        ${dailyRate.toFixed(3)}/day → ~${projOffboards} projected full-year losses out of ${curEntry.start_doors} doors
+      </div>
+    </div>`;
+  }
+  const statsHtml = dstats(
+    dstat(data.current_churn_pct != null ? data.current_churn_pct.toFixed(2) + '%' : '—',
+      'YTD Churn ' + data.current_year,
+      data.current_churn_pct == null ? '' : data.current_churn_pct <= 10 ? 'green' : data.current_churn_pct <= 15 ? 'yellow' : 'red',
+      data.current_churn_pct == null ? '' : data.current_churn_pct <= 10 ? 'green' : data.current_churn_pct <= 15 ? 'yellow' : 'red'),
+    dstat(avgPct != null ? avgPct.toFixed(2) + '%' : '—', 'All-Time Avg', '', ''),
+    dstat(data.current_door_count ?? '—', 'Doors Today', '', '')
+  );
+  const chartHtml = _churnBarChart(history, avgPct);
+  const tRows = history.map(h => {
+    const color = h.churn_pct < 10 ? 'text-green' : h.churn_pct <= 20 ? 'text-yellow' : 'text-red';
+    return `<tr>
+      <td class="font-mono">${h.year}</td>
+      <td class="font-mono">${h.start_doors}</td>
+      <td class="font-mono text-green">+${h.adds}</td>
+      <td class="font-mono text-red">-${h.offboards}</td>
+      <td class="font-mono">${h.end_doors}</td>
+      <td class="font-mono ${color}">${h.churn_pct.toFixed(2)}%</td>
+    </tr>`;
+  }).join('');
+  const tableHtml = `<div class="table-wrap" style="margin-top:20px"><table>
+    <thead><tr><th>Year</th><th>Start Doors</th><th>Adds</th><th>Offboards</th><th>End Doors</th><th>Churn %</th></tr></thead>
+    <tbody>${tRows}</tbody>
+  </table></div>
+  <div style="font-size:12px;color:var(--muted);margin-top:12px;padding:8px 12px;background:#f9f8f6;border-radius:6px">
+    Your target: ≤10% annual churn · NARPM benchmark: &lt;15%
+  </div>`;
+  body.innerHTML = statsHtml + projHtml + chartHtml + tableHtml;
+}
+
+function _churnBarChart(history, avgPct) {
+  if (!history.length) return '';
+  const W = 560, H = 220, padL = 40, padR = 20, padT = 24, padB = 32;
+  const chartW = W - padL - padR, chartH = H - padT - padB;
+  const maxPct = Math.max(...history.map(h => h.churn_pct), avgPct || 0, 5);
+  const scaleY = v => chartH - (v / (maxPct * 1.15)) * chartH;
+  const barW = Math.floor(chartW / history.length * 0.55);
+  const gap  = chartW / history.length;
+  const bars = history.map((h, i) => {
+    const x = padL + i * gap + (gap - barW) / 2;
+    const barH = Math.max(2, chartH - scaleY(h.churn_pct));
+    const y    = padT + scaleY(h.churn_pct);
+    const fill = h.churn_pct < 10 ? '#16a34a' : h.churn_pct <= 20 ? '#d97706' : '#dc2626';
+    return `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="${fill}" rx="3"/>
+      <text x="${x + barW / 2}" y="${y - 4}" text-anchor="middle" font-size="11" fill="#374151">${h.churn_pct.toFixed(1)}%</text>
+      <text x="${x + barW / 2}" y="${H - padB + 14}" text-anchor="middle" font-size="11" fill="#6b7280">${h.year}</text>`;
+  }).join('');
+  let avgLine = '';
+  if (avgPct != null) {
+    const ay = padT + scaleY(avgPct);
+    avgLine = `<line x1="${padL}" y1="${ay}" x2="${W - padR}" y2="${ay}" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="${W - padR + 2}" y="${ay + 4}" font-size="10" fill="#9ca3af">Avg</text>`;
+  }
+  const targetY = padT + scaleY(10);
+  const targetLine = `<line x1="${padL}" y1="${targetY}" x2="${W - padR}" y2="${targetY}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text x="${W - padR + 2}" y="${targetY + 4}" font-size="10" fill="#dc2626">10%</text>`;
+  return `<div style="overflow-x:auto;margin:16px 0">
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block">
+      ${bars}${avgLine}${targetLine}
+    </svg>
+  </div>`;
 }
 
 // ─── Financial current-period KPI row ────────────────────
@@ -1159,6 +1265,69 @@ function renderDrawer(section, data) {
     return;
   }
 
+  if (section === 'churn') {
+    _renderChurnDrawer(data, body);
+    return;
+  }
+
+  if (section === 'occupancy') {
+    const vacant = data.vacant_units || [];
+    const occ = data.occupied || 0; const tot = data.total || 0;
+    const pct = tot > 0 ? (occ / tot * 100).toFixed(1) : null;
+    const pctColor = pct == null ? '' : pct >= 95 ? 'green' : pct >= 90 ? 'yellow' : 'red';
+    body.innerHTML = dstats(
+      dstat(pct != null ? pct + '%' : '—', 'Occupancy Rate', pctColor, pctColor),
+      dstat(occ, 'Units Occupied', 'green', 'green'),
+      dstat(tot, 'Total Units', '', ''),
+      vacant.length ? dstat(vacant.length, 'Units Vacant', 'red', 'red') : ''
+    ) + (vacant.length ? `<div class="table-wrap"><table>
+      <thead><tr><th>Address</th><th>Days Vacant</th></tr></thead>
+      <tbody>${vacant.map(u => `<tr>
+        <td class="font-mono">${esc(u.property_name||u.unit_label||u.unit_id||'')}</td>
+        <td class="font-mono text-yellow">${u.days_vacant||0} days</td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : '<div class="drawer-empty">All units occupied ✓</div>');
+    return;
+  }
+
+  if (section === 'renewals') {
+    const rows = data.records || [];
+    if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No renewals in pipeline</div>'; return; }
+    const signed      = rows.filter(r => r.status === 'signed').length;
+    const lost        = rows.filter(r => r.status === 'lost').length;
+    const inProgress  = rows.filter(r => r.status === 'in_negotiation' || r.status === 'contacted').length;
+    const notStarted  = rows.filter(r => r.status === 'not_started').length;
+    const rentAtRisk  = rows.filter(r => r.status !== 'signed').reduce((s,r) => s + (r.monthly_rent||0), 0);
+    body.innerHTML = dstats(
+      dstat(rows.length, 'In Pipeline', '', ''),
+      dstat(signed,     'Signed',        'green',  'green'),
+      dstat(inProgress, 'In Progress',   inProgress  ? 'yellow' : '', inProgress  ? 'yellow' : ''),
+      dstat(notStarted, 'Not Contacted', notStarted  ? 'red'    : '', notStarted  ? 'red'    : ''),
+      dstat(fmt$(rentAtRisk) + '/mo', 'Rent Unsigned', rentAtRisk > 0 ? 'red' : '', rentAtRisk > 0 ? 'red' : '')
+    ) + `<div class="table-wrap"><table>
+        <thead><tr><th>Resident</th><th>Unit</th><th>Lease Ends</th><th>Days Left</th><th>Status</th></tr></thead>
+        <tbody>${rows.map(r => {
+          const days = daysFromNow(r.lease_end_date || r.end_date);
+          const dCls = days != null && days < 30 ? 'text-red' : days != null && days < 60 ? 'text-yellow' : '';
+          const dDisp = days == null ? '—' : days <= 0 ? '<span class="text-red">Expired</span>' : days + ' days';
+          const statusMap = {not_started:'Not Started',contacted:'Contacted',in_negotiation:'In Negotiation',signed:'Signed',lost:'Lost'};
+          const sBadge = r.status === 'signed' ? 'badge-green' : r.status === 'lost' ? 'badge-red' : r.status === 'not_started' ? 'badge-gray' : 'badge-yellow';
+          return `<tr>
+            <td>${esc(r.tenant_name)}</td>
+            <td class="font-mono text-muted">${esc(r.unit_label||r.unit||'')}</td>
+            <td class="text-muted">${fmtDate(r.lease_end_date||r.end_date)}</td>
+            <td class="${dCls} font-mono">${dDisp}</td>
+            <td><span class="badge ${sBadge}">${statusMap[r.status]||r.status}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+        <tfoot><tr style="border-top:2px solid var(--border);font-weight:700">
+          <td colspan="4" style="color:var(--muted)">${rows.length} total &nbsp;·&nbsp; <span class="text-green">${signed} signed</span> &nbsp;·&nbsp; <span class="text-red">${lost} lost</span></td>
+          <td class="font-mono text-red">${fmt$(rentAtRisk)}/mo at risk</td>
+        </tr></tfoot>
+      </table></div>`;
+    return;
+  }
+
   body.innerHTML = '<div class="drawer-empty">No data available for this section.</div>';
 }
 
@@ -1167,7 +1336,9 @@ async function loadAll(manual) {
   const btn = document.getElementById('btn-refresh');
   if (btn) { btn.classList.add('loading'); btn.disabled = true; }
   try {
-    const kpisRes = await fetch('/api/kpis?_=' + Date.now());
+    const kpisRes = manual
+      ? await fetch('/api/refresh', { method: 'POST' })
+      : await fetch('/api/kpis?_=' + Date.now());
     if (kpisRes.status === 401) { window.location.href = '/auth/login'; return; }
     if (!kpisRes.ok) throw new Error('KPI ' + kpisRes.status);
 
@@ -1186,6 +1357,13 @@ async function loadAll(manual) {
     document.getElementById('offline-banner').style.display = 'none';
 
     renderKPIs(kpis);
+    // Wire KPI cards to drill-down drawers
+    [['kc-rent','rent_collected','Late Rent — Detail'],['kc-occ','occupancy','Occupancy'],
+     ['kc-dom','vacant_units','Vacant Units — Revenue Lost'],['kc-ren','renewals','Renewal Pipeline'],
+     ['kc-sor','overdue_work_orders','Overdue Work Orders']].forEach(([id,sec,ttl]) => {
+      const c = document.getElementById(id); if (!c) return;
+      c.style.cursor = 'pointer'; c.onclick = () => openDrillDown(sec, ttl);
+    });
     renderZeroGoals(kpis);
     renderDelinquency(kpis);
     renderAtRisk(kpis);
