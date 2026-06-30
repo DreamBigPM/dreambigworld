@@ -14,3 +14,5 @@ google-api-python-client
 pdfplumber
 # File upload support (required for UploadFile in FastAPI)
 python-multipart
+# Supabase — primary KPI data source
+supabase
