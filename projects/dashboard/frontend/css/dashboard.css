@@ -1033,7 +1033,7 @@ tr:hover td { background: #F7F8FA; }
 .dc-vac-loss { color: #DC2626; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; margin-left: 8px; }
 
 /* Compact-list inside detail card loses its standalone border/shadow */
-.detail-card .compact-list { border: none; border-radius: 0; box-shadow: none; }
+.detail-card .compact-list { border: none; border-radius: 0; box-shadow: none; flex: 1; overflow-y: auto; }
 .detail-card .compact-item { border-bottom: 1px solid #F0F2F5; }
 .detail-card .compact-item:last-child { border-bottom: none; }
 .detail-card .compact-empty { padding: 14px 16px; }
