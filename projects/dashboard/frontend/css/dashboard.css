@@ -944,6 +944,7 @@ tr:hover td { background: #F7F8FA; }
   gap: 14px;
   margin-bottom: 8px;
   justify-content: center;
+  align-items: start;
 }
 .detail-card {
   background: #FFFFFF;
