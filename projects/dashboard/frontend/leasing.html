@@ -201,6 +201,7 @@
     <div class="kpi-card gray" id="kc-vac"><div class="kpi-name">Vacant Units</div><div class="kpi-value">—</div></div>
     <div class="kpi-card gray" id="kc-e30"><div class="kpi-name">Expiring 1–31 Days</div><div class="kpi-value">—</div></div>
     <div class="kpi-card gray" id="kc-e60"><div class="kpi-name">Expiring 32–61 Days</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card gray" id="kc-e90"><div class="kpi-name">Expiring 62–91 Days</div><div class="kpi-value">—</div></div>
     <div class="kpi-card gray" id="kc-ren"><div class="kpi-name">Renewal Rate</div><div class="kpi-value">—</div></div>
   </div>
 
@@ -714,12 +715,13 @@ function renderKPIs(d) {
 
 function renderExpirationKPIs(records) {
   const today = new Date(); today.setHours(0,0,0,0);
-  let e30 = 0, e60 = 0;
+  let e30 = 0, e60 = 0, e90 = 0;
   (records || []).forEach(r => {
     const days = daysUntil(r.end_date || r.lease_end_date);
     if (days == null) return;
     if (days >= 1 && days <= 31) e30++;
     else if (days >= 32 && days <= 61) e60++;
+    else if (days >= 62 && days <= 91) e90++;
   });
   renderKPICard('kc-e30', 'Expiring 1–31 Days', 'exp_30',
     e30, e30, null,
@@ -729,6 +731,10 @@ function renderExpirationKPIs(records) {
     e60, e60, null,
     e60 > 0 ? 'Follow up now' : 'All clear',
     'Target: contacted');
+  renderKPICard('kc-e90', 'Expiring 62–91 Days', 'exp_90',
+    e90, e90, null,
+    e90 > 0 ? 'On radar' : 'All clear',
+    'Target: aware');
 }
 
 // ─── Vacant Units List ─────────────────────────────────────
@@ -1015,6 +1021,7 @@ async function loadAll(manual) {
     _addKPIDrillOnclick('kc-ren', 'renewals', 'Renewal Pipeline');
     _addKPIDrillOnclick('kc-e30', 'renewals', 'Expiring 1–31 Days');
     _addKPIDrillOnclick('kc-e60', 'renewals', 'Expiring 32–61 Days');
+    _addKPIDrillOnclick('kc-e90', 'renewals', 'Expiring 62–91 Days');
 
     const vacUnits = kpis.vacancy_cost_clock || [];
     renderVacantUnits(vacUnits);
