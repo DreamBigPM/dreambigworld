@@ -340,8 +340,9 @@ function fmtDate(s) {
 }
 function daysFromNow(s) {
   if (!s) return null;
+  const _today = new Date(); _today.setHours(0,0,0,0);
   const d = new Date(s + 'T00:00:00');
-  return Math.round((d - Date.now()) / 86400000);
+  return Math.round((d - _today) / 86400000);
 }
 function fmtTs(s) {
   if (!s) return '—';
@@ -400,10 +401,11 @@ function renderKPIs(d) {
 
   // Expiring lease counts from the Supabase renewal pipeline (same source as the renewal rate card)
   const _pipe    = d.renewal_rate?.pipeline || [];
-  const _pipeDy  = r => { const dt = r.lease_end_date || ''; if (!dt) return null; return Math.round((new Date(dt + 'T00:00:00') - Date.now()) / 86400000); };
-  const _exp30   = _pipe.filter(r => { const dy = _pipeDy(r); return dy != null && dy >= 0 && dy <= 30; }).length;
-  const _exp60   = _pipe.filter(r => { const dy = _pipeDy(r); return dy != null && dy > 30  && dy <= 60; }).length;
-  const _exp90   = _pipe.filter(r => { const dy = _pipeDy(r); return dy != null && dy > 60  && dy <= 90; }).length;
+  const _pipeToday = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
+  const _pipeDy  = r => { const dt = r.lease_end_date || ''; if (!dt) return null; return Math.round((new Date(dt + 'T00:00:00') - _pipeToday) / 86400000); };
+  const _exp30   = _pipe.filter(r => { const dy = _pipeDy(r); return dy != null && dy >= 1  && dy <= 31; }).length;
+  const _exp60   = _pipe.filter(r => { const dy = _pipeDy(r); return dy != null && dy >= 32 && dy <= 61; }).length;
+  const _exp90   = _pipe.filter(r => { const dy = _pipeDy(r); return dy != null && dy >= 62 && dy <= 91; }).length;
 
   const kpis = [
     { key:'rent_collected',     name:'Rent Collected',       val:rentPct,
