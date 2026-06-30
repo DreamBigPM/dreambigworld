@@ -11,7 +11,7 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from backend import rentvine, database
+from backend import rentvine, database, rentvine_mcp
 
 logger = logging.getLogger(__name__)
 
@@ -99,32 +99,24 @@ async def compute_rent_collected() -> dict:
 async def compute_occupancy() -> dict:
     """Physical occupancy rate."""
     try:
-        units, leases = await asyncio.gather(
+        units, vacancy_list = await asyncio.gather(
             rentvine.fetch_units(),
-            rentvine.fetch_leases(status="active"),
+            rentvine_mcp.fetch_vacancy(),
         )
 
-        today_iso = _today()
         total = len(units)
-        leased_unit_ids = set(
-            str(l.get("unitId") or l.get("unit_id") or "")
-            for l in leases
-            if (l.get("startDate") or l.get("start_date") or "9999-12-31")[:10] <= today_iso
-        )
-
-        vacant_units = []
-        for unit in units:
-            uid = str(unit.get("id") or unit.get("unitId") or "")
-            if uid not in leased_unit_ids:
-                monthly_rent = float(unit.get("marketRent") or unit.get("rent") or 0)
-                daily_rent = monthly_rent / 30 if monthly_rent else 0
-                vacant_units.append({
-                    "unit_id": uid,
-                    "property_name": unit.get("propertyName") or unit.get("property") or "",
-                    "unit_label": unit.get("label") or unit.get("unitNumber") or uid,
-                    "days_vacant": _days_between(unit.get("vacantSince") or unit.get("availableDate")),
-                    "daily_rent_estimate": round(daily_rent, 2),
-                })
+        # fetch_vacancy() is the authoritative source for vacant units — it returns
+        # real street addresses and correct days_vacant from the Rentvine vacancy report.
+        vacant_units = [
+            {
+                "unit_id": v["unit_id"],
+                "property_name": v["property_name"],
+                "unit_label": v["unit_label"],
+                "days_vacant": v["days_vacant"],
+                "daily_rent_estimate": v["daily_cost"],
+            }
+            for v in vacancy_list
+        ]
 
         occupied = total - len(vacant_units)
         pct = (occupied / total * 100) if total > 0 else 0.0
