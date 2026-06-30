@@ -744,12 +744,10 @@ function openFinModal(key) {
       </div>
       <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: $50/door</div>`;
   } else if (key === 'dler') {
-    const rows = (bd.dler_items||[]).map(i =>
-      `<tr><td style="color:#6b7280">${i.gl}&nbsp;${i.name}</td><td style="text-align:right;font-weight:500">${fmtD(i.amount)}</td></tr>`).join('');
     html = `<div style="margin-bottom:4px"><strong>Formula:</strong> Revenue ÷ Direct Labor</div>
       <div style="margin-bottom:10px;font-size:12px;color:#6b7280">For every $1 of direct labor, how many dollars of revenue?</div>
-      <table class="fin-detail-table">${rows}
-        <tr class="fin-total"><td style="font-weight:700">Total Direct Labor</td><td style="text-align:right;font-weight:700">${fmtD(bd.direct_labor)}</td></tr>
+      <table class="fin-detail-table">
+        <tr><td style="color:#6b7280">Total Direct Labor</td><td style="text-align:right;font-weight:600">${fmtD(bd.direct_labor)}</td></tr>
         <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmtD(gr)}</td></tr>
       </table>
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
@@ -757,12 +755,10 @@ function openFinModal(key) {
       </div>
       <div style="margin-top:5px;font-size:12px;color:#6b7280">NARPM 2025 benchmark: 4.51 · Higher is better</div>`;
   } else if (key === 'mler') {
-    const rows = (bd.mler_items||[]).map(i =>
-      `<tr><td style="color:#6b7280">${i.gl}&nbsp;${i.name}</td><td style="text-align:right;font-weight:500">${fmtD(i.amount)}</td></tr>`).join('');
     html = `<div style="margin-bottom:4px"><strong>Formula:</strong> Revenue ÷ Management Labor</div>
       <div style="margin-bottom:10px;font-size:12px;color:#6b7280">For every $1 of management labor, how many dollars of revenue?</div>
-      <table class="fin-detail-table">${rows}
-        <tr class="fin-total"><td style="font-weight:700">Total Mgmt Labor</td><td style="text-align:right;font-weight:700">${fmtD(bd.mgmt_labor)}</td></tr>
+      <table class="fin-detail-table">
+        <tr><td style="color:#6b7280">Total Mgmt Labor</td><td style="text-align:right;font-weight:600">${fmtD(bd.mgmt_labor)}</td></tr>
         <tr><td style="color:#6b7280">Gross Revenue</td><td style="text-align:right;font-weight:600">${fmtD(gr)}</td></tr>
       </table>
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700">
