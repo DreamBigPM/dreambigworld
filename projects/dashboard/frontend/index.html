@@ -553,7 +553,7 @@ function renderDelinquency(d) {
     _setBadge('dc-del-badge', 0, 'clear');
     document.getElementById('dc-del-badge').textContent = 'Grace Period';
     if (seeAll) seeAll.textContent = 'See all →';
-    el.innerHTML = '<div class="compact-empty">Grace period active — charges aren't late until the 5th</div>';
+    el.innerHTML = `<div class="compact-empty">Grace period active — charges aren't late until the 5th</div>`;
     return;
   }
   _setBadge('dc-del-badge', rows.length, rows.length === 0 ? 'clear' : 'danger');
