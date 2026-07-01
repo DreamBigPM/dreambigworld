@@ -511,11 +511,10 @@ async def api_refresh(user: dict = Depends(auth.get_current_user)):
 @app.get("/api/briefing")
 async def api_briefing(request: Request, user: dict = Depends(auth.get_current_user)):
     role = user.get("role", "admin")
-    # Allow ?role= override when SKIP_AUTH is on (local dev only)
-    if os.getenv("SKIP_AUTH", "false").lower() == "true":
-        override = request.query_params.get("role")
-        if override:
-            role = override
+    # Always honor ?role= from the dashboard page — it controls data subset, not access
+    override = request.query_params.get("role")
+    if override:
+        role = override
     from datetime import date as _date
     kpis = await _get_kpis_cached()
     text = await briefing.get_or_generate_briefing(role=role, kpi_data=kpis)
@@ -647,8 +646,9 @@ async def api_drill(
         })
 
     if section in ("renewals", "expiring_30", "expiring_60", "expiring_90"):
-        # Use Supabase renewal pipeline — same source as the renewal rate card.
-        recs = list(data.get("renewal_rate", {}).get("pipeline", []) or [])
+        # Use expiry_pipeline (12-month window) for drill-downs so 62-91 day cards
+        # don't miss leases that fall just outside the 90-day renewal_pipeline cutoff.
+        recs = list(data.get("expiry_pipeline", []) or data.get("renewal_rate", {}).get("pipeline", []) or [])
         recs = [dict(r) if not isinstance(r, dict) else r for r in recs]
         try:
             sqlite_map = {str(r["lease_id"]): r for r in database.get_renewal_pipeline()}

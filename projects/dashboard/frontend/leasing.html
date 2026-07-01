@@ -1029,8 +1029,8 @@ async function loadAll(manual) {
     const expRecs = expiryData?.records || [];
     renderExpirations(expRecs);
     if (expRecs.length === 0) {
-      // Fallback: use pipeline data from renewal_rate if drill returns nothing
-      const pipe = kpis.renewal_rate?.pipeline || [];
+      // Fallback: use expiry_pipeline (12-month) then renewal_rate pipeline
+      const pipe = kpis.expiry_pipeline || kpis.renewal_rate?.pipeline || [];
       renderExpirations(pipe);
     }
 
