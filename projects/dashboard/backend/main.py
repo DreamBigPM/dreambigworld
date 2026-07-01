@@ -354,6 +354,9 @@ def _filter_kpis_by_role(kpis: dict, user: dict) -> dict:
             "days_on_market": kpis.get("days_on_market", {}),
             "renewal_rate": kpis.get("renewal_rate", {}),
             "vacancy_cost_clock": kpis.get("vacancy_cost_clock", []),
+            "lease_expiry_calendar": kpis.get("lease_expiry_calendar", []),
+            "expiry_pipeline": kpis.get("expiry_pipeline", []),
+            "expiring_leases": kpis.get("expiring_leases", {}),
             "refreshed_at": kpis.get("refreshed_at"),
         }
 

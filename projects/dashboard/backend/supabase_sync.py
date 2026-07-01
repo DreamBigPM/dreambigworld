@@ -370,19 +370,21 @@ async def run_full_sync(dry_run: bool = False) -> dict:
     ], [{"name": "leaseStatusID", "comparator": "in", "values": [1, 2, 3]}])
     logger.info(f"Sync: got {len(tenant_rows)} tenant rows")
 
-    tenant_records = []
-    seen_contact_ids: set = set()
+    # leaseStatusID filter is silently ignored by Rentvine — tenants may appear for
+    # multiple leases (old + renewed). Keep the row with the highest leaseID (most recent).
+    best_by_contact: dict = {}  # cid_str → (lid, row)
     for t in tenant_rows:
         cid = _int(t.get("contactID"))
-        lid = _int(t.get("leaseID"))
-        status_id = _int(t.get("leaseStatusID"))
+        lid = _int(t.get("leaseID")) or 0
         if not cid:
             continue
-        # A tenant can be linked to multiple leases — skip duplicates, keep first occurrence
         cid_str = str(cid)
-        if cid_str in seen_contact_ids:
-            continue
-        seen_contact_ids.add(cid_str)
+        if cid_str not in best_by_contact or lid > best_by_contact[cid_str][0]:
+            best_by_contact[cid_str] = (lid, t)
+
+    tenant_records = []
+    for cid_str, (lid, t) in best_by_contact.items():
+        status_id = _int(t.get("leaseStatusID"))
 
         # Split "FirstName LastName" → first_name, last_name
         full_name = _str(t.get("contactName")) or ""

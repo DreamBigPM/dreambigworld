@@ -788,6 +788,7 @@ function expBadgeText(days) {
 }
 
 let _expRecords = [];
+let _expiryPipelineFull = [];
 
 function renderExpirations(records) {
   _expRecords = records || [];
@@ -960,7 +961,7 @@ function openChurnDrillDown() {
 }
 
 function openLeasingExpiryMonth(monthLabel, monthStart) {
-  const pipeline = (_expRecords && _expRecords.length) ? _expRecords : [];
+  const pipeline = (_expiryPipelineFull && _expiryPipelineFull.length) ? _expiryPipelineFull : _expRecords;
   const [msYear, msMonth] = monthStart.split('-').map(Number);
   const records = pipeline
     .filter(r => {
@@ -1026,6 +1027,7 @@ async function loadAll(manual) {
     const vacUnits = kpis.vacancy_cost_clock || [];
     renderVacantUnits(vacUnits);
 
+    _expiryPipelineFull = kpis.expiry_pipeline || [];
     const expRecs = expiryData?.records || [];
     renderExpirations(expRecs);
     if (expRecs.length === 0) {
