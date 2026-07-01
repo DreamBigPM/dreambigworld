@@ -766,7 +766,7 @@ function renderExpirationKPIs(records) {
   const today = new Date(); today.setHours(0,0,0,0);
   let e30 = 0, e60 = 0, e90 = 0;
   (records || []).forEach(r => {
-    const days = daysUntil(r.end_date || r.lease_end_date);
+    const days = r._days != null ? r._days : daysUntil(r.end_date || r.lease_end_date);
     if (days == null) return;
     if (days >= 1 && days <= 31) e30++;
     else if (days >= 32 && days <= 61) e60++;
