@@ -373,7 +373,11 @@ async def generate_briefing(
             f"Focus on what changed since yesterday or what needs action today. "
             f"Plain English. No sub-bullets. No section headers. "
             f"Always say 'resident' or 'residents' — never 'tenant' or 'tenants'. "
-            f"Do not use asterisks or markdown bold anywhere in your response."
+            f"Do not use asterisks or markdown bold anywhere in your response.\n\n"
+            f"IMPORTANT — vacancies: NEVER say a unit 'appeared overnight', 'is new', or 'just became vacant' "
+            f"unless its days_vacant value is exactly 1 AND it was absent from yesterday's vacancy list. "
+            f"If days_vacant is greater than 1, the unit has been vacant for multiple days — "
+            f"state the actual days_vacant count instead. Do not imply recency that isn't there."
         )
 
         # Calendar reminders

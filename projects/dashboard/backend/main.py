@@ -663,6 +663,22 @@ async def api_drill(
                 r.setdefault("status", "not_started")
         except Exception as e:
             logger.warning(f"Expiry drill status merge failed: {e}")
+        # Filter to the specific day window for each bucket
+        if section != "renewals":
+            from datetime import date as _date
+            _today = _date.today()
+            _ranges = {"expiring_30": (1, 31), "expiring_60": (32, 61), "expiring_90": (62, 91)}
+            _lo, _hi = _ranges[section]
+            def _in_range(r):
+                d = r.get("lease_end_date", "")
+                if not d:
+                    return False
+                try:
+                    days = (_date.fromisoformat(d) - _today).days
+                    return _lo <= days <= _hi
+                except Exception:
+                    return False
+            recs = [r for r in recs if _in_range(r)]
         return JSONResponse({"section": section, "records": recs})
 
     if section == "rent_collected":

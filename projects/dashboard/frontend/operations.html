@@ -294,6 +294,8 @@ let alertsOpen = true;
 // ─── KPI color logic ──────────────────────────────────────
 function kpiColor(key, val) {
   if (val == null) return 'gray';
+  // Suppress rent collection color thresholds during grace period (1st–4th)
+  if (key === 'rent_collected' && new Date().getDate() < 5) return 'gray';
   const v = Number(val);
   const m = {
     rent_collected: v => v >= 98 ? 'green' : v >= 93 ? 'yellow' : 'red',
@@ -989,7 +991,17 @@ function renderZeroGoals(d) {
     el.closest('.zero-card').className = 'zero-card ' + (count === 0 ? 'clear' : 'danger');
     document.getElementById(badgeId).textContent = count === 0 ? 'CLEAR' : 'CRITICAL';
   }
-  setZero('z-delinquent', 'z-del-badge',    d.delinquent_count || 0);
+  // Grace period: rent isn't late until the 5th — suppress card before then
+  const _today = new Date();
+  const _inGrace = _today.getDate() < 5;
+  if (_inGrace) {
+    const _el = document.getElementById('z-delinquent');
+    _el.textContent = '—';
+    _el.closest('.zero-card').className = 'zero-card clear';
+    document.getElementById('z-del-badge').textContent = 'Grace Period';
+  } else {
+    setZero('z-delinquent', 'z-del-badge', d.delinquent_count || 0);
+  }
   setZero('z-open-wo',    'z-open-badge',   d.open_work_orders_count || 0);
   const overdueCount = d.overdue_work_orders_count || d.speed_of_repair?.overdue_count || 0;
   setZero('z-overdue-wo', 'z-overdue-badge', overdueCount);
@@ -1014,8 +1026,16 @@ function _setBadge(id, count, style) {
 function renderDelinquency(d) {
   const rows = d.rent_collected?.delinquent_leases || [];
   const el = document.getElementById('compact-delinquency');
-  _setBadge('dc-del-badge', rows.length, rows.length === 0 ? 'clear' : 'danger');
   const seeAll = document.getElementById('dc-del-seeall');
+  // Grace period: suppress delinquency display before the 5th
+  if (new Date().getDate() < 5) {
+    _setBadge('dc-del-badge', 0, 'clear');
+    document.getElementById('dc-del-badge').textContent = 'Grace Period';
+    if (seeAll) seeAll.textContent = 'See all →';
+    el.innerHTML = '<div class="compact-empty">Grace period active — charges aren't late until the 5th</div>';
+    return;
+  }
+  _setBadge('dc-del-badge', rows.length, rows.length === 0 ? 'clear' : 'danger');
   if (seeAll) seeAll.textContent = rows.length ? 'See all ' + rows.length + ' →' : 'See all →';
   if (!rows.length) { el.innerHTML = '<div class="compact-empty">No delinquent leases — all clear ✓</div>'; return; }
   el.innerHTML = rows.slice(0, 5).map(r => {

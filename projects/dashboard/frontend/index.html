@@ -365,6 +365,8 @@ function esc(s) {
 // ─────────────────────────────────────────────────────────
 function kpiColor(key, val) {
   if (val == null) return 'gray';
+  // Suppress rent collection color thresholds during grace period (1st–4th)
+  if (key === 'rent_collected' && new Date().getDate() < 5) return 'gray';
   const v = Number(val);
   const map = {
     rent_collected:     v => v >= 98 ? 'green' : v >= 93 ? 'yellow' : 'red',
@@ -504,7 +506,17 @@ function renderZeroGoals(d) {
     const badge = document.getElementById(badgeId);
     badge.textContent = isZero ? 'CLEAR' : 'CRITICAL';
   }
-  setZero('z-delinquent',  'z-del-badge',    d.delinquent_count || 0);
+  // Grace period: rent isn't late until the 5th — suppress card before then
+  const _today = new Date();
+  const _inGrace = _today.getDate() < 5;
+  if (_inGrace) {
+    const _el = document.getElementById('z-delinquent');
+    _el.textContent = '—';
+    _el.closest('.zero-card').className = 'zero-card clear';
+    document.getElementById('z-del-badge').textContent = 'Grace Period';
+  } else {
+    setZero('z-delinquent', 'z-del-badge', d.delinquent_count || 0);
+  }
   setZero('z-open-wo',     'z-open-badge',   d.open_work_orders_count || 0);
   // overdue_work_orders_count is normalized in backend; fall back to speed_of_repair.overdue_count
   const overdueCount = d.overdue_work_orders_count || d.speed_of_repair?.overdue_count || 0;
@@ -535,8 +547,16 @@ function _setBadge(id, count, style) {
 function renderDelinquency(d) {
   const rows = d.rent_collected?.delinquent_leases || [];
   const el   = document.getElementById('compact-delinquency');
-  _setBadge('dc-del-badge', rows.length, rows.length === 0 ? 'clear' : 'danger');
   const seeAll = document.getElementById('dc-del-seeall');
+  // Grace period: suppress delinquency display before the 5th
+  if (new Date().getDate() < 5) {
+    _setBadge('dc-del-badge', 0, 'clear');
+    document.getElementById('dc-del-badge').textContent = 'Grace Period';
+    if (seeAll) seeAll.textContent = 'See all →';
+    el.innerHTML = '<div class="compact-empty">Grace period active — charges aren't late until the 5th</div>';
+    return;
+  }
+  _setBadge('dc-del-badge', rows.length, rows.length === 0 ? 'clear' : 'danger');
   if (seeAll) seeAll.textContent = rows.length ? 'See all ' + rows.length + ' →' : 'See all →';
   if (!rows.length) {
     el.innerHTML = '<div class="compact-empty">No delinquent leases — all clear ✓</div>';
@@ -630,8 +650,12 @@ function toggleWOTable() {
 function renderRenewals(d) {
   const all = (d.renewal_rate?.pipeline || []).slice()
     .sort((a, b) => new Date(a.lease_end_date) - new Date(b.lease_end_date));
-  // Show only unsigned/not-yet-acted-upon renewals — signed are done
-  const rows = all.filter(r => r.status !== 'signed' && r.status !== 'lost');
+  // Only leases expiring within 92 days require action — further out is on radar, not urgent
+  const rows = all.filter(r => {
+    if (r.status === 'signed' || r.status === 'lost') return false;
+    const d = daysFromNow(r.lease_end_date);
+    return d == null || d <= 92;
+  });
   const el = document.getElementById('compact-renewals');
   _setBadge('dc-ren-badge', rows.length, rows.length === 0 ? 'clear' : 'warn');
   const seeAll = document.getElementById('dc-ren-seeall');
@@ -642,7 +666,7 @@ function renderRenewals(d) {
     return;
   }
 
-  el.innerHTML = rows.slice(0, 5).map(r => {
+  el.innerHTML = rows.slice(0, 10).map(r => {
     const days   = daysFromNow(r.lease_end_date);
     const dot    = days == null ? 'gray' : days <= 0 ? 'red' : days <= 30 ? 'red' : days <= 60 ? 'yellow' : 'green';
     const valCls = days != null && days <= 30 ? 'text-red' : days != null && days <= 60 ? 'text-yellow' : '';
@@ -1237,7 +1261,7 @@ function renderDrawer(section, data) {
     const maxColor  = maxDays > 30 ? 'red' : maxDays > 14 ? 'yellow' : '';
     body.innerHTML = dstats(
       dstat(rows.length, rows.length === 1 ? 'Unit Vacant' : 'Units Vacant', 'red', 'red'),
-      dstat(avgDays + ' days', 'Avg Days on Market', maxColor, maxColor),
+      dstat(avgDays + ' days', 'Avg Days Vacant', maxColor, maxColor),
       dstat(maxDays + ' days', 'Longest on Market', maxColor, maxColor),
       dstat(fmt$(totalLoss), 'Total Revenue Lost', 'red', 'red')
     ) + `<div class="table-wrap"><table>

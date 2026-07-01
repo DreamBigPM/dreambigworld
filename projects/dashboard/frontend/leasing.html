@@ -394,7 +394,7 @@ function renderDrawer(section, data) {
     return;
   }
 
-  if (section === 'renewals') {
+  if (section === 'renewals' || section === 'expiring_30' || section === 'expiring_60' || section === 'expiring_90') {
     const rows = data.records || [];
     if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No renewals in pipeline</div>'; return; }
     const signed      = rows.filter(r => r.status === 'signed').length;
@@ -429,6 +429,57 @@ function renderDrawer(section, data) {
           <td class="font-mono text-red">${fmt$(rentAtRisk)}/mo at risk</td>
         </tr></tfoot>
       </table></div>`;
+    return;
+  }
+
+  if (section === 'renewal_history') {
+    const months  = (data.monthly_chart || []).filter(m => m.rate_pct != null).slice(-12);
+    const renewed = data.renewed_count || 0;
+    const total   = data.total_count   || 0;
+    const notRen  = total - renewed;
+    const rate12  = total > 0 ? Math.round(renewed / total * 100) : null;
+    const rClr    = rate12 == null ? '' : rate12 >= 90 ? 'green' : rate12 >= 80 ? 'yellow' : 'red';
+    if (!months.length) { body.innerHTML = '<div class="drawer-empty">No renewal history in the last 12 months</div>'; return; }
+    // Summary stats
+    let html = dstats(
+      dstat(rate12 != null ? rate12 + '%' : '—', 'Renewal Rate (12m)', rClr, rClr),
+      dstat(renewed, 'Renewed', 'green', 'green'),
+      dstat(notRen,  'Moved Out', notRen > 0 ? 'red' : 'green', notRen > 0 ? 'red' : 'green'),
+      dstat(total,   'Total Eligible', '', '')
+    );
+    // Bar chart — each month: gray = total_eligible, green overlay = renewals
+    const maxTotal = Math.max(...months.map(m => m.total_eligible || 0), 1);
+    const barH = 80, bW = 36, gap = 10, padL = 28, padB = 28, padT = 14;
+    const W = padL + months.length * (bW + gap) + gap;
+    const H = barH + padB + padT;
+    let bars = '', xLabels = '';
+    months.forEach((m, i) => {
+      const x       = padL + i * (bW + gap);
+      const te      = m.total_eligible || 0;
+      const ren     = m.renewals || 0;
+      const totH    = te > 0 ? Math.max(3, Math.round((te / maxTotal) * barH)) : 2;
+      const renH    = ren > 0 ? Math.max(2, Math.round((ren / maxTotal) * barH)) : 0;
+      const yTot    = padT + barH - totH;
+      const yRen    = padT + barH - renH;
+      bars += `<rect x="${x}" y="${yTot}" width="${bW}" height="${totH}" fill="#e5e7eb" rx="2"/>`;
+      bars += `<rect x="${x}" y="${yRen}" width="${bW}" height="${renH}" fill="#16a34a" rx="2"/>`;
+      const rateLabel = te > 0 ? Math.round(ren / te * 100) + '%' : '';
+      bars += `<text x="${x + bW/2}" y="${yTot - 3}" text-anchor="middle" font-size="9" fill="#6b7280">${rateLabel}</text>`;
+      const shortLabel = (m.month_label || m.month_key || '').replace(/ \d{4}$/, '');
+      xLabels += `<text x="${x + bW/2}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#6b7280">${shortLabel}</text>`;
+    });
+    const yAxis = `<text x="4" y="${padT + barH/2}" text-anchor="middle" font-size="8" fill="#9ca3af" transform="rotate(-90, 4, ${padT + barH/2})">leases</text>`;
+    html += `<div style="overflow-x:auto;margin-top:12px">
+      <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;max-width:100%">
+        ${yAxis}${bars}${xLabels}
+        <line x1="${padL}" y1="${padT + barH}" x2="${W - gap}" y2="${padT + barH}" stroke="#e5e7eb"/>
+      </svg>
+      <div style="display:flex;gap:16px;margin-top:6px;font-size:11px;color:var(--muted);padding-left:${padL}px">
+        <span><span style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px;margin-right:4px"></span>Renewed</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#e5e7eb;border-radius:2px;margin-right:4px"></span>Total eligible</span>
+      </div>
+    </div>`;
+    body.innerHTML = html;
     return;
   }
 
@@ -581,6 +632,7 @@ function kpiColor(key, val) {
     vacant_count:   v => v === 0 ? 'green' : v <= 3 ? 'yellow' : 'red',
     exp_30:         v => v === 0 ? 'green' : v <= 2 ? 'yellow' : 'red',
     exp_60:         v => v <= 3 ? 'green' : v <= 6 ? 'yellow' : 'red',
+    exp_90:         v => v === 0 ? 'green' : 'yellow',
   };
   return m[key] ? m[key](v) : 'gray';
 }
@@ -730,11 +782,11 @@ function renderExpirationKPIs(records) {
   renderKPICard('kc-e60', 'Expiring 32–61 Days', 'exp_60',
     e60, e60, null,
     e60 > 0 ? 'Follow up now' : 'All clear',
-    'Target: contacted');
+    null);
   renderKPICard('kc-e90', 'Expiring 62–91 Days', 'exp_90',
     e90, e90, null,
     e90 > 0 ? 'On radar' : 'All clear',
-    'Target: aware');
+    null);
 }
 
 // ─── Vacant Units List ─────────────────────────────────────
@@ -797,7 +849,7 @@ function renderExpirations(records) {
 
   const filtered = _expRecords
     .map(r => ({ ...r, _days: daysUntil(r.end_date || r.lease_end_date) }))
-    .filter(r => r._days != null && r._days >= 1 && r._days <= 91)
+    .filter(r => r._days != null && r._days >= 1 && r._days <= 92)
     .sort((a,b) => a._days - b._days);
 
   if (filtered.length === 0) {
@@ -1019,10 +1071,10 @@ async function loadAll(manual) {
     _addKPIDrillOnclick('kc-occ', 'occupancy', 'Occupancy');
     _addKPIDrillOnclick('kc-vac', 'vacant_units', 'Vacant Units — Revenue Lost');
     _addKPIDrillOnclick('kc-dom', 'vacant_units', 'Vacant Units — Revenue Lost');
-    _addKPIDrillOnclick('kc-ren', 'renewals', 'Renewal Pipeline');
-    _addKPIDrillOnclick('kc-e30', 'renewals', 'Expiring 1–31 Days');
-    _addKPIDrillOnclick('kc-e60', 'renewals', 'Expiring 32–61 Days');
-    _addKPIDrillOnclick('kc-e90', 'renewals', 'Expiring 62–91 Days');
+    _addKPIDrillOnclick('kc-ren', 'renewal_history', 'Renewal Rate — History');
+    _addKPIDrillOnclick('kc-e30', 'expiring_30', 'Expiring 1–31 Days');
+    _addKPIDrillOnclick('kc-e60', 'expiring_60', 'Expiring 32–61 Days');
+    _addKPIDrillOnclick('kc-e90', 'expiring_90', 'Expiring 62–91 Days');
 
     const vacUnits = kpis.vacancy_cost_clock || [];
     renderVacantUnits(vacUnits);

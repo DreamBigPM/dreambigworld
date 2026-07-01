@@ -239,6 +239,8 @@ async def fetch_kpis(database_module=None) -> dict:
                 data["occupancy"]["occupied"] = total_units - n_vacant
                 data["occupancy"]["pct"] = round((total_units - n_vacant) / total_units * 100, 1)
                 data["occupancy"]["total"] = total_units
+                # Use Rentvine vacancy data for the popup so days_vacant are accurate
+                data["occupancy"]["vacant_units"] = vacant_units
             # Compute avg DOM from current vacancies, excluding extreme outliers (>180 days)
             normal = [u["days_vacant"] for u in vacant_units if u.get("days_vacant", 0) <= 180]
             if normal:

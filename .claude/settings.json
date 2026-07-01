@@ -1,4 +1,8 @@
 {
   "model": "sonnet",
-  "theme": "auto"
+  "theme": "auto",
+  "allowedTools": [
+    "mcp__rentvine__*",
+    "mcp__supabase__execute_sql"
+  ]
 }

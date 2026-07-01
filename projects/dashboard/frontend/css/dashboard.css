@@ -1047,8 +1047,8 @@ tr:hover td { background: #F7F8FA; }
 .detail-card .alert-item { padding: 8px 14px; }
 .detail-card .alert-item:last-child { border-bottom: none; }
 
-/* Vacancy grid inside detail card */
-.detail-card #vacancy-clock-grid { flex-direction: column; justify-content: flex-start; }
+/* Vacancy clock — always single column regardless of card width */
+.detail-card #vacancy-clock-grid { column-count: 1; display: block; }
 
 /* ── RESPONSIVE ─────────────────────────────────────────── */
 @media (max-width: 640px) {
