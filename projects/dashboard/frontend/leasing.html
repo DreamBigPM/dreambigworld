@@ -231,8 +231,8 @@
 
   <!-- UPCOMING EXPIRATIONS -->
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
-    <div class="section-label" style="margin:0;cursor:pointer" onclick="openDrillDown('renewals','Upcoming Lease Expirations')">Upcoming Lease Expirations ›</div>
-    <div style="font-size:12px;color:var(--muted)">Click a status to update · <span style="cursor:pointer;text-decoration:underline" onclick="openDrillDown('renewals','Upcoming Lease Expirations')">See all →</span></div>
+    <div class="section-label" style="margin:0">Renewals Requiring Action (Next 92 Days)</div>
+    <div style="font-size:12px;color:var(--muted)">Click a status to update · <span style="cursor:pointer;text-decoration:underline" onclick="openDrillDown('renewals','Full Renewal Pipeline')">See all →</span></div>
   </div>
   <div class="card" id="exp-card" style="padding:0;margin-top:8px">
     <div id="exp-list"><div style="padding:18px;color:var(--muted);font-size:13px">Loading…</div></div>
@@ -1054,7 +1054,7 @@ async function loadAll(manual) {
     const [kpis, briefingData, expiryData, churnRes] = await Promise.all([
       kpisRes.json(),
       fetch('/api/briefing?role=leasing_agent').then(r => r.ok ? r.json() : null),
-      fetch('/api/drill/expiring_90').then(r => r.ok ? r.json() : null),
+      fetch('/api/drill/renewals').then(r => r.ok ? r.json() : null),
       fetch('/api/churn'),
     ]);
 
