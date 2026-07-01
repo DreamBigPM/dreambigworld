@@ -307,7 +307,7 @@ function kpiColor(key, val) {
   };
   return m[key] ? m[key](v) : 'gray';
 }
-const statusLabel = { green:'● On Target', yellow:'● Needs Attention', red:'● Below Target', gray:'— No Data' };
+const statusLabel = { green:'● On Target', yellow:'● Off Target', red:'● Below Target', gray:'— No Data' };
 
 function setKPICard(id, key, val, display, sub, target) {
   const card = document.getElementById(id);
@@ -992,7 +992,7 @@ function renderZeroGoals(d) {
     document.getElementById(badgeId).textContent = count === 0 ? 'CLEAR' : 'CRITICAL';
   }
   setZero('z-delinquent', 'z-del-badge', d.delinquent_count || 0);
-  if (new Date().getDate() < 5) document.getElementById('z-del-badge').textContent = 'Grace Period';
+  if (new Date().getDate() < 5) document.getElementById('z-del-badge').textContent = 'Leases Past-Due';
   setZero('z-open-wo',    'z-open-badge',   d.open_work_orders_count || 0);
   const overdueCount = d.overdue_work_orders_count || d.speed_of_repair?.overdue_count || 0;
   setZero('z-overdue-wo', 'z-overdue-badge', overdueCount);
@@ -1019,7 +1019,7 @@ function renderDelinquency(d) {
   const el = document.getElementById('compact-delinquency');
   const seeAll = document.getElementById('dc-del-seeall');
   _setBadge('dc-del-badge', rows.length, rows.length === 0 ? 'clear' : 'danger');
-  if (new Date().getDate() < 5) document.getElementById('dc-del-badge').textContent = 'Grace Period';
+  if (new Date().getDate() < 5) document.getElementById('dc-del-badge').textContent = 'Leases Past-Due';
   if (seeAll) seeAll.textContent = rows.length ? 'See all ' + rows.length + ' →' : 'See all →';
   if (!rows.length) { el.innerHTML = '<div class="compact-empty">No delinquent leases — all clear ✓</div>'; return; }
   el.innerHTML = rows.slice(0, 5).map(r => {
@@ -1256,8 +1256,8 @@ function renderDrawer(section, data) {
     const maxColor = maxDays > 30 ? 'red' : maxDays > 14 ? 'yellow' : '';
     body.innerHTML = dstats(
       dstat(rows.length, 'Units Vacant', 'red', 'red'),
-      dstat(avgDays + ' days', 'Avg Days on Market', maxColor, maxColor),
-      dstat(maxDays + ' days', 'Longest on Market', maxColor, maxColor),
+      dstat(avgDays + '<span style="font-size:0.55em;font-weight:400"> days</span>', 'Avg Days Vacant', maxColor, maxColor),
+      dstat(maxDays + '<span style="font-size:0.55em;font-weight:400"> days</span>', 'Longest Vacant', maxColor, maxColor),
       dstat(fmt$(totalLoss), 'Total Revenue Lost', 'red', 'red')
     ) + `<div class="table-wrap"><table>
       <thead><tr><th>Address</th><th>Days Vacant</th><th>Daily Cost</th><th>Total Lost</th></tr></thead>

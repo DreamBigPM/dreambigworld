@@ -386,7 +386,7 @@ function kpiColor(key, val) {
   };
   return map[key] ? map[key](v) : 'gray';
 }
-const statusLabel = { green:'● On Target', yellow:'● Needs Attention', red:'● Below Target', gray:'— No Data' };
+const statusLabel = { green:'● On Target', yellow:'● Off Target', red:'● Below Target', gray:'— No Data' };
 
 // ─────────────────────────────────────────────────────────
 // RENDER: KPI SCORECARD
@@ -507,7 +507,7 @@ function renderZeroGoals(d) {
     badge.textContent = isZero ? 'CLEAR' : 'CRITICAL';
   }
   setZero('z-delinquent', 'z-del-badge', d.delinquent_count || 0);
-  if (new Date().getDate() < 5) document.getElementById('z-del-badge').textContent = 'Grace Period';
+  if (new Date().getDate() < 5) document.getElementById('z-del-badge').textContent = 'Leases Past-Due';
   setZero('z-open-wo',     'z-open-badge',   d.open_work_orders_count || 0);
   // overdue_work_orders_count is normalized in backend; fall back to speed_of_repair.overdue_count
   const overdueCount = d.overdue_work_orders_count || d.speed_of_repair?.overdue_count || 0;
@@ -540,7 +540,7 @@ function renderDelinquency(d) {
   const el   = document.getElementById('compact-delinquency');
   const seeAll = document.getElementById('dc-del-seeall');
   _setBadge('dc-del-badge', rows.length, rows.length === 0 ? 'clear' : 'danger');
-  if (new Date().getDate() < 5) document.getElementById('dc-del-badge').textContent = 'Grace Period';
+  if (new Date().getDate() < 5) document.getElementById('dc-del-badge').textContent = 'Leases Past-Due';
   if (seeAll) seeAll.textContent = rows.length ? 'See all ' + rows.length + ' →' : 'See all →';
   if (!rows.length) {
     el.innerHTML = '<div class="compact-empty">No delinquent leases — all clear ✓</div>';
@@ -643,7 +643,8 @@ function renderRenewals(d) {
   const el = document.getElementById('compact-renewals');
   _setBadge('dc-ren-badge', rows.length, rows.length === 0 ? 'clear' : 'warn');
   const seeAll = document.getElementById('dc-ren-seeall');
-  if (seeAll) seeAll.textContent = all.length ? 'See full pipeline (' + all.length + ') →' : 'See full pipeline →';
+  const _pipeCount = (d.expiry_pipeline || []).length || all.length;
+  if (seeAll) seeAll.textContent = _pipeCount ? 'See full pipeline (' + _pipeCount + ') →' : 'See full pipeline →';
 
   if (!rows.length) {
     el.innerHTML = '<div class="compact-empty">All renewals signed or no pipeline yet ✓</div>';
@@ -1245,8 +1246,8 @@ function renderDrawer(section, data) {
     const maxColor  = maxDays > 30 ? 'red' : maxDays > 14 ? 'yellow' : '';
     body.innerHTML = dstats(
       dstat(rows.length, rows.length === 1 ? 'Unit Vacant' : 'Units Vacant', 'red', 'red'),
-      dstat(avgDays + ' days', 'Avg Days Vacant', maxColor, maxColor),
-      dstat(maxDays + ' days', 'Longest on Market', maxColor, maxColor),
+      dstat(avgDays + '<span style="font-size:0.55em;font-weight:400"> days</span>', 'Avg Days Vacant', maxColor, maxColor),
+      dstat(maxDays + '<span style="font-size:0.55em;font-weight:400"> days</span>', 'Longest Vacant', maxColor, maxColor),
       dstat(fmt$(totalLoss), 'Total Revenue Lost', 'red', 'red')
     ) + `<div class="table-wrap"><table>
         <thead><tr><th>Address</th><th>Days Vacant</th><th>Daily Cost</th><th>Total Lost</th></tr></thead>
@@ -1423,7 +1424,7 @@ function renderDrawer(section, data) {
     const statusBadge = p => {
       if (p == null) return '';
       const cls = p >= 90 ? 'badge-green' : p >= 75 ? 'badge-yellow' : 'badge-red';
-      const lbl = p >= 90 ? 'On Target' : 'Needs Attention';
+      const lbl = p >= 90 ? 'On Target' : 'Off Target';
       return `<span class="badge ${cls}">${lbl}</span>`;
     };
     const colorVar = c => c ? `var(--${c})` : 'var(--fg)';
