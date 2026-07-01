@@ -395,7 +395,10 @@ function renderDrawer(section, data) {
   }
 
   if (section === 'renewals' || section === 'expiring_30' || section === 'expiring_60' || section === 'expiring_90') {
-    const rows = data.records || [];
+    const _allRows = data.records || [];
+    const rows = section === 'renewals'
+      ? _allRows.filter(r => { const d = daysFromNow(r.lease_end_date || r.end_date); return d != null && d <= 92; })
+      : _allRows;
     if (!rows.length) { body.innerHTML = '<div class="drawer-empty">No renewals in pipeline</div>'; return; }
     const signed      = rows.filter(r => r.status === 'signed').length;
     const lost        = rows.filter(r => r.status === 'lost').length;
