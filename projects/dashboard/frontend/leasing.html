@@ -630,9 +630,6 @@ function kpiColor(key, val) {
     days_on_market: v => v <= 21 ? 'green' : v <= 30 ? 'yellow' : 'red',
     renewal_rate:   v => v >= 90 ? 'green' : v >= 80 ? 'yellow' : 'red',
     vacant_count:   v => v === 0 ? 'green' : v <= 3 ? 'yellow' : 'red',
-    exp_30:         v => v === 0 ? 'green' : v <= 2 ? 'yellow' : 'red',
-    exp_60:         v => v <= 3 ? 'green' : v <= 6 ? 'yellow' : 'red',
-    exp_90:         v => v === 0 ? 'green' : 'yellow',
   };
   return m[key] ? m[key](v) : 'gray';
 }
@@ -649,7 +646,7 @@ function renderKPICard(id, label, key, val, display, unit, sub, target) {
     `<div class="kpi-value">${valHtml}</div>` +
     (target ? `<div class="kpi-target">${target}</div>` : '') +
     (sub    ? `<div class="kpi-sub">${sub}</div>` : '') +
-    `<div class="kpi-status">${statusLabel[color]}</div>`;
+    (color !== 'gray' || val == null ? `<div class="kpi-status">${statusLabel[color]}</div>` : '');
 }
 
 // ─── Briefing ──────────────────────────────────────────────
@@ -775,18 +772,9 @@ function renderExpirationKPIs(records) {
     else if (days >= 32 && days <= 61) e60++;
     else if (days >= 62 && days <= 91) e90++;
   });
-  renderKPICard('kc-e30', 'Expiring 1–31 Days', 'exp_30',
-    e30, e30, null,
-    e30 > 0 ? 'Action needed' : 'None urgent',
-    'Target: 0 unsigned');
-  renderKPICard('kc-e60', 'Expiring 32–61 Days', 'exp_60',
-    e60, e60, null,
-    e60 > 0 ? 'Follow up now' : 'All clear',
-    null);
-  renderKPICard('kc-e90', 'Expiring 62–91 Days', 'exp_90',
-    e90, e90, null,
-    e90 > 0 ? 'On radar' : 'All clear',
-    null);
+  renderKPICard('kc-e30', 'Expiring 1–31 Days', null, e30, e30, null, null, null);
+  renderKPICard('kc-e60', 'Expiring 32–61 Days', null, e60, e60, null, null, null);
+  renderKPICard('kc-e90', 'Expiring 62–91 Days', null, e90, e90, null, null, null);
 }
 
 // ─── Vacant Units List ─────────────────────────────────────
